@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 德州扑克</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ===== Navbar ===== -->
+    <nav class="navbar">
+        <div class="navbar-title">德州大乱斗</div>
+        <div class="navbar-controls">
+            <span id="connectionStatus" class="connection-status disconnected">● 离线</span>
+
+            <!-- 游戏控制按钮（管理员专属） -->
+            <div class="admin-only" style="gap: 6px;">
+                <button class="pixel-btn pixel-btn-small" id="btnStart" onclick="sendControl('start')">开始</button>
+                <button class="pixel-btn pixel-btn-small" id="btnPause" onclick="sendControl('pause')">暂停</button>
+                <button class="pixel-btn pixel-btn-small" id="btnStep" onclick="sendControl('step')">单步</button>
+                <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnReset" onclick="sendControl('reset')">重置</button>
+            </div>
+
+            <!-- 登录/登出按钮 -->
+            <button class="pixel-btn pixel-btn-small" id="btnLogin" onclick="showLoginModal()">登录</button>
+            <button class="pixel-btn pixel-btn-small admin-only-inline" id="btnAdminLabel" style="cursor:default;display:none;">管理员</button>
+            <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnLogout" style="display:none;" onclick="logout()">登出</button>
+        </div>
+    </nav>
+
+    <!-- ===== Main Content ===== -->
+    <div class="main-container">
+        <!-- Left: Canvas Table -->
+        <div class="table-area">
+            <div class="canvas-wrapper">
+                <canvas id="pokerCanvas"></canvas>
+            </div>
+            <div class="status-bar">
+                <span class="status-item" id="statusHand">第 0 手</span>
+                <div class="stage-indicator">
+                    <span class="stage-dot" id="stagePreflop">翻前</span>
+                    <span class="stage-dot" id="stageFlop">翻牌</span>
+                    <span class="stage-dot" id="stageTurn">转牌</span>
+                    <span class="stage-dot" id="stageRiver">河牌</span>
+                </div>
+                <span class="status-item gold" id="statusBlinds">小/大盲: $50/$100</span>
+                <span class="status-item" id="statusAlive">存活: 0/0</span>
+            </div>
+        </div>
+
+        <!-- Right: Side Panel -->
+        <div class="side-panel">
+            <div class="tab-bar">
+                <button class="tab-btn admin-tab" data-tab="models" onclick="switchTab('models')">模型</button>
+                <button class="tab-btn admin-tab" data-tab="players" onclick="switchTab('players')">玩家</button>
+                <button class="tab-btn active" data-tab="log" onclick="switchTab('log')">日志</button>
+            </div>
+
+            <!-- Models Tab -->
+            <div class="tab-content" id="tabModels">
+                <button class="pixel-btn pixel-btn-small pixel-btn-primary" style="width:100%;margin-bottom:10px;" onclick="ModelPanel.showAddForm()">+ 添加模型</button>
+                <div id="modelFormContainer"></div>
+                <div id="modelList"></div>
+            </div>
+
+            <!-- Players Tab -->
+            <div class="tab-content" id="tabPlayers">
+                <div id="playerCards"></div>
+                <button class="pixel-btn pixel-btn-small" style="width:100%;margin-bottom:10px;" onclick="ConfigPanel.addPlayer()">+ 添加玩家</button>
+
+                <div class="settings-section">
+                    <div class="settings-title">游戏设置</div>
+                    <div class="setting-row">
+                        <span class="setting-label">最大手数</span>
+                        <div class="setting-value">
+                            <input type="number" class="pixel-input" id="settingMaxHands" value="10" min="0">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">动作延迟(秒)</span>
+                        <div class="setting-value">
+                            <input type="number" class="pixel-input" id="settingDelay" value="2" min="0.5" step="0.5">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">大盲注</span>
+                        <div class="setting-value">
+                            <input type="number" class="pixel-input" id="settingBigBlind" value="100" min="10" step="10">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">起始筹码</span>
+                        <div class="setting-value">
+                            <input type="number" class="pixel-input" id="settingChips" value="10000" min="100" step="100">
+                        </div>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">淘汰制</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="settingEliminate" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-row">
+                        <span class="setting-label">涨盲间隔(手)</span>
+                        <div class="setting-value">
+                            <input type="number" class="pixel-input" id="settingBlindInc" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="pixel-btn pixel-btn-primary" style="width:100%;margin-top:12px;" onclick="ConfigPanel.saveConfig()">保存配置</button>
+            </div>
+
+            <!-- Log Tab -->
+            <div class="tab-content active" id="tabLog">
+                <div class="log-container" id="logContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Login Modal ===== -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-card">
+            <button class="modal-close" onclick="hideLoginModal()">X</button>
+            <div class="modal-title">管理员登录</div>
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" class="pixel-input" id="loginPassword" placeholder="请输入密码..."
+                       onkeydown="if(event.key==='Enter')doLogin()">
+            </div>
+            <button class="pixel-btn pixel-btn-primary" style="width:100%;margin-top:12px;" onclick="doLogin()">&gt;&gt; 登录 &lt;&lt;</button>
+            <div class="modal-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/card_renderer.js"></script>
+    <script src="/static/js/table.js"></script>
+    <script src="/static/js/logger.js"></script>
+    <script src="/static/js/model_panel.js"></script>
+    <script src="/static/js/config_panel.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

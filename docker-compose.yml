@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  texas:
+    build: .
+    container_name: texas-holdem
+    ports:
+      - "32431:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

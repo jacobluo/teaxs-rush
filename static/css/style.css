@@ -1,0 +1,581 @@
+/* Tailwind CSS CDN */
+@import url('https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css');
+/* Google Fonts - Press Start 2P */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+    --bg-darkest: #0B1929;
+    --bg-dark: #0F2440;
+    --bg-mid: #1A3A4A;
+    --bg-light: #162D50;
+    --primary: #87CEEB;
+    --primary-mid: #5B9BD5;
+    --primary-light: #B0D4F1;
+    --text-light: #E0F0FF;
+    --text-muted: #7A9BB5;
+    --text-gold: #D4A854;
+    --danger: #E06060;
+    --success: #60C0A0;
+    --border-blue: #2A4A6B;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-darkest);
+    color: var(--text-light);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    image-rendering: pixelated;
+}
+
+/* ========== Navbar ========== */
+.navbar {
+    background: var(--bg-dark);
+    border-bottom: 2px solid var(--primary);
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 100;
+}
+
+.navbar-title {
+    font-size: 16px;
+    color: var(--primary);
+    white-space: nowrap;
+}
+
+.navbar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ========== Pixel Buttons ========== */
+.pixel-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    padding: 12px 20px;
+    border: 2px solid var(--primary-mid);
+    background: var(--bg-light);
+    color: var(--primary-light);
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: none;
+    white-space: nowrap;
+}
+
+.pixel-btn:hover {
+    background: var(--primary);
+    color: var(--bg-dark);
+}
+
+.pixel-btn:active {
+    transform: translate(1px, 1px);
+}
+
+.pixel-btn-primary {
+    background: var(--primary);
+    color: var(--bg-dark);
+    border-color: var(--primary);
+}
+
+.pixel-btn-primary:hover {
+    background: var(--primary-light);
+}
+
+.pixel-btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.pixel-btn-danger:hover {
+    background: var(--danger);
+    color: var(--bg-dark);
+}
+
+.pixel-btn-small {
+    font-size: 12px;
+    padding: 8px 14px;
+}
+
+/* ========== Main Layout ========== */
+.main-container {
+    display: flex;
+    height: calc(100vh - 52px);
+}
+
+.table-area {
+    flex: 7;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-darkest);
+    min-width: 0;
+}
+
+.canvas-wrapper {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+#pokerCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ========== Status Bar ========== */
+.status-bar {
+    background: var(--bg-dark);
+    border-top: 1px solid var(--primary);
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 16px;
+    height: 44px;
+    flex-shrink: 0;
+}
+
+.status-item {
+    color: var(--primary-light);
+}
+
+.status-item.gold {
+    color: var(--text-gold);
+}
+
+.stage-indicator {
+    display: flex;
+    gap: 4px;
+}
+
+.stage-dot {
+    padding: 6px 14px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-blue);
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+.stage-dot.active {
+    background: var(--primary);
+    color: var(--bg-dark);
+    border-color: var(--primary);
+    animation: pixel-blink 1s step-end infinite;
+}
+
+/* ========== Side Panel ========== */
+.side-panel {
+    flex: 4;
+    background: var(--bg-dark);
+    border-left: 2px solid var(--primary);
+    display: flex;
+    flex-direction: column;
+    min-width: 400px;
+    max-width: 560px;
+}
+
+.tab-bar {
+    display: flex;
+    border-bottom: 2px solid var(--border-blue);
+    flex-shrink: 0;
+}
+
+.tab-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    padding: 12px 16px;
+    background: var(--bg-light);
+    color: var(--text-muted);
+    border: none;
+    cursor: pointer;
+    flex: 1;
+    text-align: center;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: var(--bg-dark);
+    border-bottom-color: var(--primary);
+}
+
+.tab-btn:hover:not(.active) {
+    color: var(--primary-light);
+}
+
+.tab-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ========== Pixel Input ========== */
+.pixel-input {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    width: 100%;
+    padding: 8px;
+    background: var(--bg-darkest);
+    border: 2px solid var(--primary-mid);
+    color: var(--text-light);
+    outline: none;
+}
+
+.pixel-input:focus {
+    border-color: var(--primary);
+}
+
+.pixel-input::placeholder {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+.pixel-select {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    width: 100%;
+    padding: 8px;
+    background: var(--bg-darkest);
+    border: 2px solid var(--primary-mid);
+    color: var(--text-light);
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+.pixel-select:focus {
+    border-color: var(--primary);
+}
+
+/* ========== Form Groups ========== */
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+/* ========== Model List ========== */
+.model-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px;
+    border: 1px solid var(--border-blue);
+    margin-bottom: 6px;
+    background: var(--bg-darkest);
+}
+
+.model-item-name {
+    color: var(--primary-light);
+    font-size: 11px;
+}
+
+.model-item-actions {
+    display: flex;
+    gap: 6px;
+}
+
+/* ========== Player Card ========== */
+.player-card {
+    border: 2px solid var(--border-blue);
+    padding: 10px;
+    margin-bottom: 10px;
+    background: var(--bg-darkest);
+}
+
+.player-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.player-card-title {
+    font-size: 14px;
+    color: var(--primary);
+}
+
+/* ========== Log Panel (CRT Style) ========== */
+.log-container {
+    background: var(--bg-darkest);
+    border: 2px solid var(--border-blue);
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
+}
+
+.log-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(135, 206, 235, 0.03) 2px,
+        rgba(135, 206, 235, 0.03) 4px
+    );
+    pointer-events: none;
+}
+
+.log-entry {
+    font-family: Menlo, Monaco, 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 2.0;
+    padding: 3px 0;
+    word-break: break-all;
+}
+
+.log-entry .timestamp {
+    color: var(--text-muted);
+    margin-right: 6px;
+}
+
+.log-entry.action { color: var(--primary); }
+.log-entry.thinking { color: var(--text-muted); }
+.log-entry.win { color: var(--text-gold); }
+.log-entry.fold { color: #5A6A7A; }
+.log-entry.system { color: var(--success); }
+.log-entry.error { color: var(--danger); }
+
+/* ========== Login Modal ========== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(11, 25, 41, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-card {
+    background: var(--bg-dark);
+    border: 3px solid var(--primary);
+    padding: 24px;
+    width: 400px;
+    max-width: 90vw;
+    position: relative;
+}
+
+.modal-title {
+    font-size: 16px;
+    color: var(--primary);
+    text-align: center;
+    margin-bottom: 20px;
+    animation: pixel-blink 1s step-end infinite;
+}
+
+.modal-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'Press Start 2P', monospace;
+}
+
+.modal-close:hover {
+    color: var(--primary);
+}
+
+.modal-error {
+    color: var(--danger);
+    font-size: 11px;
+    text-align: center;
+    margin-top: 8px;
+    min-height: 16px;
+}
+
+/* ========== Admin Only ========== */
+.admin-only {
+    display: none !important;
+}
+
+body.is-admin .admin-only {
+    display: flex !important;
+}
+
+body.is-admin .admin-only-block {
+    display: block !important;
+}
+
+body.is-admin .admin-only-inline {
+    display: inline !important;
+}
+
+/* Tab visibility for observer */
+.tab-btn.admin-tab {
+    display: none;
+}
+
+body.is-admin .tab-btn.admin-tab {
+    display: block;
+}
+
+/* ========== Toggle Switch ========== */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bg-light);
+    border: 2px solid var(--primary-mid);
+    transition: none;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--text-muted);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--primary);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+    background: var(--bg-dark);
+}
+
+/* ========== Scrollbar ========== */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-darkest);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-blue);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-mid);
+}
+
+/* ========== Animations ========== */
+@keyframes pixel-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes pixel-flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* ========== Game Settings ========== */
+.settings-section {
+    border: 2px solid var(--border-blue);
+    padding: 10px;
+    margin-top: 12px;
+}
+
+.settings-title {
+    font-size: 11px;
+    color: var(--primary);
+    margin-bottom: 10px;
+}
+
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.setting-label {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.setting-value {
+    width: 80px;
+}
+
+.setting-value .pixel-input {
+    font-size: 14px;
+    padding: 5px 8px;
+    text-align: right;
+}
+
+/* ========== Style Colors ========== */
+.style-badge {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    vertical-align: middle;
+    border: 1px solid var(--border-blue);
+}
+
+/* ========== Connection Status ========== */
+.connection-status {
+    font-size: 10px;
+    padding: 3px 8px;
+}
+
+.connection-status.connected {
+    color: var(--success);
+}
+
+.connection-status.disconnected {
+    color: var(--danger);
+    animation: pixel-flash 1s step-end infinite;
+}
