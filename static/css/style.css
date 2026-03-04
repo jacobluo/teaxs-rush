@@ -114,6 +114,47 @@ body::after {
     text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(135, 206, 235, 0.3);
 }
 
+/* 像素风标题 */
+.pixel-title {
+    display: inline-block;
+    position: relative;
+    font-size: 18px;
+    letter-spacing: 4px;
+    background: linear-gradient(180deg, #B0E0FF 0%, #87CEEB 40%, #5B9BD5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(135, 206, 235, 0.4));
+    animation: pixel-title-glow 3s ease-in-out infinite;
+}
+
+.pixel-title::before {
+    content: '♠';
+    position: absolute;
+    left: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    -webkit-text-fill-color: #D4A854;
+    animation: pixel-flash 2s step-end infinite;
+}
+
+.pixel-title::after {
+    content: '♦';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    -webkit-text-fill-color: #E06060;
+    animation: pixel-flash 2s step-end infinite 1s;
+}
+
+@keyframes pixel-title-glow {
+    0%, 100% { filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(135, 206, 235, 0.4)); }
+    50% { filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6)) drop-shadow(0 0 16px rgba(135, 206, 235, 0.7)); }
+}
+
 .navbar-controls {
     display: flex;
     align-items: center;
