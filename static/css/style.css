@@ -37,22 +37,81 @@ html, body {
     image-rendering: pixelated;
 }
 
+/* 像素风背景：CRT扫描线 + 网格 */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    background:
+        /* CRT 扫描线 */
+        repeating-linear-gradient(
+            0deg,
+            rgba(135, 206, 235, 0.04) 0px,
+            rgba(135, 206, 235, 0.04) 1px,
+            transparent 1px,
+            transparent 3px
+        ),
+        /* 像素点阵 */
+        radial-gradient(circle, rgba(135, 206, 235, 0.08) 1px, transparent 1px),
+        /* 大方格 */
+        linear-gradient(rgba(42, 74, 107, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42, 74, 107, 0.3) 1px, transparent 1px);
+    background-size: 100% 3px, 6px 6px, 48px 48px, 48px 48px;
+    pointer-events: none;
+}
+
+/* 像素星星 + 装饰方块 */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-image:
+        /* 亮色方块像素点 */
+        radial-gradient(2px 2px at 8% 12%, rgba(135, 206, 235, 0.8) 100%, transparent 100%),
+        radial-gradient(2px 2px at 22% 28%, rgba(212, 168, 84, 0.9) 100%, transparent 100%),
+        radial-gradient(3px 3px at 38% 6%, rgba(96, 192, 160, 0.7) 100%, transparent 100%),
+        radial-gradient(2px 2px at 52% 38%, rgba(135, 206, 235, 0.8) 100%, transparent 100%),
+        radial-gradient(2px 2px at 68% 18%, rgba(176, 212, 241, 0.7) 100%, transparent 100%),
+        radial-gradient(3px 3px at 82% 48%, rgba(212, 168, 84, 0.8) 100%, transparent 100%),
+        radial-gradient(2px 2px at 12% 62%, rgba(96, 192, 160, 0.7) 100%, transparent 100%),
+        radial-gradient(2px 2px at 30% 78%, rgba(135, 206, 235, 0.6) 100%, transparent 100%),
+        radial-gradient(3px 3px at 58% 68%, rgba(176, 212, 241, 0.8) 100%, transparent 100%),
+        radial-gradient(2px 2px at 78% 82%, rgba(212, 168, 84, 0.7) 100%, transparent 100%),
+        radial-gradient(2px 2px at 90% 25%, rgba(135, 206, 235, 0.9) 100%, transparent 100%),
+        radial-gradient(3px 3px at 45% 52%, rgba(96, 192, 160, 0.6) 100%, transparent 100%),
+        radial-gradient(2px 2px at 95% 72%, rgba(176, 212, 241, 0.7) 100%, transparent 100%),
+        radial-gradient(2px 2px at 4% 88%, rgba(212, 168, 84, 0.8) 100%, transparent 100%),
+        radial-gradient(3px 3px at 72% 92%, rgba(135, 206, 235, 0.7) 100%, transparent 100%);
+    animation: pixel-twinkle 3s step-end infinite;
+    pointer-events: none;
+}
+
 /* ========== Navbar ========== */
 .navbar {
     background: var(--bg-dark);
-    border-bottom: 2px solid var(--primary);
+    border-bottom: 3px solid var(--primary);
     height: 52px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 16px;
     z-index: 100;
+    box-shadow: 0 4px 0 rgba(135, 206, 235, 0.1), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
 .navbar-title {
     font-size: 16px;
     color: var(--primary);
     white-space: nowrap;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5), 0 0 10px rgba(135, 206, 235, 0.3);
 }
 
 .navbar-controls {
@@ -73,15 +132,20 @@ html, body {
     text-transform: uppercase;
     transition: none;
     white-space: nowrap;
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
 }
 
 .pixel-btn:hover {
     background: var(--primary);
     color: var(--bg-dark);
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4), 0 0 8px rgba(135, 206, 235, 0.4);
+    text-shadow: none;
 }
 
 .pixel-btn:active {
-    transform: translate(1px, 1px);
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
 }
 
 .pixel-btn-primary {
@@ -119,7 +183,11 @@ html, body {
     flex: 7;
     display: flex;
     flex-direction: column;
-    background: var(--bg-darkest);
+    background:
+        /* 像素点阵纹理 */
+        radial-gradient(rgba(135, 206, 235, 0.04) 1px, transparent 1px),
+        var(--bg-darkest);
+    background-size: 4px 4px;
     min-width: 0;
 }
 
@@ -138,7 +206,7 @@ html, body {
 /* ========== Status Bar ========== */
 .status-bar {
     background: var(--bg-dark);
-    border-top: 1px solid var(--primary);
+    border-top: 3px solid var(--primary);
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -146,6 +214,7 @@ html, body {
     font-size: 16px;
     height: 44px;
     flex-shrink: 0;
+    box-shadow: 0 -4px 0 rgba(135, 206, 235, 0.1);
 }
 
 .status-item {
@@ -179,7 +248,16 @@ html, body {
 /* ========== Side Panel ========== */
 .side-panel {
     flex: 4;
-    background: var(--bg-dark);
+    background:
+        /* 斜线像素纹理 */
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 3px,
+            rgba(135, 206, 235, 0.015) 3px,
+            rgba(135, 206, 235, 0.015) 4px
+        ),
+        var(--bg-dark);
     border-left: 2px solid var(--primary);
     display: flex;
     flex-direction: column;
@@ -237,10 +315,12 @@ html, body {
     border: 2px solid var(--primary-mid);
     color: var(--text-light);
     outline: none;
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3);
 }
 
 .pixel-input:focus {
     border-color: var(--primary);
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.3), 0 0 6px rgba(135, 206, 235, 0.3);
 }
 
 .pixel-input::placeholder {
@@ -349,8 +429,11 @@ html, body {
     font-family: Menlo, Monaco, 'Courier New', monospace;
     font-size: 14px;
     line-height: 2.0;
-    padding: 3px 0;
+    padding: 3px 6px;
+    margin-bottom: 2px;
     word-break: break-all;
+    border-left: 3px solid transparent;
+    transition: none;
 }
 
 .log-entry .timestamp {
@@ -359,11 +442,11 @@ html, body {
 }
 
 .log-entry.action { color: var(--primary); }
-.log-entry.thinking { color: var(--text-muted); }
-.log-entry.win { color: var(--text-gold); }
-.log-entry.fold { color: #5A6A7A; }
-.log-entry.system { color: var(--success); }
-.log-entry.error { color: var(--danger); }
+.log-entry.thinking { color: var(--text-muted); font-style: italic; opacity: 0.85; }
+.log-entry.win { color: var(--text-gold); background: rgba(212, 168, 84, 0.08); border-left-color: rgba(212, 168, 84, 0.5); }
+.log-entry.fold { color: #5A6A7A; opacity: 0.7; }
+.log-entry.system { color: var(--success); border-left-color: rgba(96, 192, 160, 0.3); }
+.log-entry.error { color: var(--danger); background: rgba(224, 96, 96, 0.08); border-left-color: rgba(224, 96, 96, 0.5); }
 
 /* ========== Login Modal ========== */
 .modal-overlay {
@@ -385,11 +468,12 @@ html, body {
 
 .modal-card {
     background: var(--bg-dark);
-    border: 3px solid var(--primary);
+    border: 4px solid var(--primary);
     padding: 24px;
     width: 400px;
     max-width: 90vw;
     position: relative;
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5), 0 0 20px rgba(135, 206, 235, 0.15);
 }
 
 .modal-title {
@@ -518,6 +602,13 @@ body.is-admin .tab-btn.admin-tab {
 @keyframes pixel-flash {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+}
+
+@keyframes pixel-twinkle {
+    0%, 100% { opacity: 1; }
+    25% { opacity: 0.6; }
+    50% { opacity: 0.3; }
+    75% { opacity: 0.8; }
 }
 
 /* ========== Game Settings ========== */

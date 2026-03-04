@@ -56,6 +56,9 @@ const PokerTable = {
         ctx.fillStyle = '#0B1929';
         ctx.fillRect(0, 0, this.W, this.H);
 
+        // 全屏像素网格
+        this._drawPixelGrid(ctx, 0, 0, this.W, this.H);
+
         // 牌桌
         const tableW = this.W * 0.6;
         const tableH = this.H * 0.42;
@@ -65,9 +68,17 @@ const PokerTable = {
         ctx.fillStyle = '#1A3A4A';
         ctx.fillRect(tableX, tableY, tableW, tableH);
 
+        // 牌桌像素点阵纹理
+        this._drawTableTexture(ctx, tableX, tableY, tableW, tableH);
+
         ctx.strokeStyle = '#87CEEB';
         ctx.lineWidth = 3;
         ctx.strokeRect(tableX, tableY, tableW, tableH);
+
+        // 牌桌内边框（像素风双线边框）
+        ctx.strokeStyle = 'rgba(135, 206, 235, 0.25)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(tableX + 6, tableY + 6, tableW - 12, tableH - 12);
 
         if (!this.state || !this.state.players) {
             ctx.fillStyle = '#7A9BB5';
@@ -427,5 +438,89 @@ const PokerTable = {
                 CardRenderer.drawCardBack(ctx, x, startY, cardScale);
             }
         }
+    },
+
+    // 全屏像素网格背景
+    _drawPixelGrid(ctx, x, y, w, h) {
+        ctx.save();
+        const gridSize = 48;
+
+        // 大网格线
+        ctx.strokeStyle = 'rgba(42, 74, 107, 0.25)';
+        ctx.lineWidth = 1;
+        for (let gx = x; gx <= x + w; gx += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(gx, y);
+            ctx.lineTo(gx, y + h);
+            ctx.stroke();
+        }
+        for (let gy = y; gy <= y + h; gy += gridSize) {
+            ctx.beginPath();
+            ctx.moveTo(x, gy);
+            ctx.lineTo(x + w, gy);
+            ctx.stroke();
+        }
+
+        // 散布像素亮点
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.12)';
+        const seed = [
+            0.08, 0.15, 0.23, 0.31, 0.42, 0.55, 0.63, 0.72, 0.81, 0.93,
+            0.12, 0.28, 0.37, 0.48, 0.67, 0.78, 0.85, 0.05, 0.52, 0.95,
+        ];
+        for (let i = 0; i < seed.length; i++) {
+            const px = x + seed[i] * w;
+            const py = y + seed[(i + 7) % seed.length] * h;
+            const s = (i % 3 === 0) ? 3 : 2;
+            ctx.fillRect(Math.floor(px), Math.floor(py), s, s);
+        }
+
+        // CRT 扫描线
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.02)';
+        for (let sy = y; sy < y + h; sy += 3) {
+            ctx.fillRect(x, sy, w, 1);
+        }
+
+        ctx.restore();
+    },
+
+    // 牌桌面像素点阵纹理
+    _drawTableTexture(ctx, tx, ty, tw, th) {
+        ctx.save();
+
+        // 点阵纹理
+        const dotSpacing = 8;
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.06)';
+        for (let dx = tx + dotSpacing; dx < tx + tw; dx += dotSpacing) {
+            for (let dy = ty + dotSpacing; dy < ty + th; dy += dotSpacing) {
+                ctx.fillRect(dx, dy, 1, 1);
+            }
+        }
+
+        // 四角像素装饰
+        const cornerSize = 12;
+        const cornerPixel = 3;
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.3)';
+        // 左上
+        for (let i = 0; i < cornerSize; i += cornerPixel) {
+            ctx.fillRect(tx + 3 + i, ty + 3, cornerPixel - 1, cornerPixel - 1);
+            ctx.fillRect(tx + 3, ty + 3 + i, cornerPixel - 1, cornerPixel - 1);
+        }
+        // 右上
+        for (let i = 0; i < cornerSize; i += cornerPixel) {
+            ctx.fillRect(tx + tw - 3 - cornerPixel - i, ty + 3, cornerPixel - 1, cornerPixel - 1);
+            ctx.fillRect(tx + tw - 3 - cornerPixel, ty + 3 + i, cornerPixel - 1, cornerPixel - 1);
+        }
+        // 左下
+        for (let i = 0; i < cornerSize; i += cornerPixel) {
+            ctx.fillRect(tx + 3 + i, ty + th - 3 - cornerPixel, cornerPixel - 1, cornerPixel - 1);
+            ctx.fillRect(tx + 3, ty + th - 3 - cornerPixel - i, cornerPixel - 1, cornerPixel - 1);
+        }
+        // 右下
+        for (let i = 0; i < cornerSize; i += cornerPixel) {
+            ctx.fillRect(tx + tw - 3 - cornerPixel - i, ty + th - 3 - cornerPixel, cornerPixel - 1, cornerPixel - 1);
+            ctx.fillRect(tx + tw - 3 - cornerPixel, ty + th - 3 - cornerPixel - i, cornerPixel - 1, cornerPixel - 1);
+        }
+
+        ctx.restore();
     },
 };
