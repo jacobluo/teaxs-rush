@@ -2,6 +2,8 @@
 @import url('https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css');
 /* Google Fonts - Press Start 2P */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+/* 中文像素字体 Zpix */
+@import url('https://cdn.jsdelivr.net/npm/zpix@3.1.8/dist/Zpix.css');
 
 :root {
     --bg-darkest: #0B1929;
@@ -118,14 +120,16 @@ body::after {
 .pixel-title {
     display: inline-block;
     position: relative;
-    font-size: 18px;
-    letter-spacing: 4px;
+    font-family: 'Zpix', 'Press Start 2P', monospace;
+    font-size: 22px;
+    letter-spacing: 6px;
     background: linear-gradient(180deg, #B0E0FF 0%, #87CEEB 40%, #5B9BD5 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6)) drop-shadow(0 0 8px rgba(135, 206, 235, 0.4));
     animation: pixel-title-glow 3s ease-in-out infinite;
+    image-rendering: pixelated;
 }
 
 .pixel-title::before {

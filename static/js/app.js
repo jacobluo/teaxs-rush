@@ -95,13 +95,24 @@ function handleGameEvent(message) {
             break;
 
         case 'deal_hole_cards':
-        case 'player_action':
         case 'community_cards':
             // 请求最新状态
             fetchAndUpdateState();
             break;
 
+        case 'player_action':
+            // 传递推理过程到牌桌气泡（气泡持续到下一个玩家出牌）
+            if (data.reasoning && data.player?.id) {
+                PokerTable.setReasoning(data.player.id, data.reasoning);
+            }
+            fetchAndUpdateState();
+            break;
+
         case 'player_thinking':
+            // 该玩家开始新一轮思考，清除其旧的推理气泡
+            if (data.player_id) {
+                PokerTable.clearPlayerBubble(data.player_id);
+            }
             // 标记当前思考中的玩家，触发闪烁灯
             if (PokerTable.state) {
                 PokerTable.state.thinking_player_id = data.player_id;
@@ -114,11 +125,13 @@ function handleGameEvent(message) {
             break;
 
         case 'hand_complete':
+            PokerTable.clearReasoningBubbles();
             fetchAndUpdateState();
             break;
 
         case 'game_over':
         case 'game_reset':
+            PokerTable.clearReasoningBubbles();
             fetchAndUpdateState();
             break;
 

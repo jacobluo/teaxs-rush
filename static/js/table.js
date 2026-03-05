@@ -9,6 +9,7 @@ const PokerTable = {
     animFrame: null,
     _blinkTimer: null,
     _blinkOn: true,
+    _reasoningBubbles: {},  // { playerId: { text } }
 
     // AI 头像颜色列表（每个玩家分配不同颜色）
     avatarColors: [
@@ -106,6 +107,10 @@ const PokerTable = {
         const thinkingId = this.state.thinking_player_id || null;
         const sbIndex = this.state.sb_index;
         const bbIndex = this.state.bb_index;
+
+        // 清除过期气泡
+        this._cleanExpiredBubbles();
+
         players.forEach((p, i) => {
             if (i < positions.length) {
                 const isThinking = (thinkingId && p.id === thinkingId);
@@ -115,6 +120,14 @@ const PokerTable = {
                 if (p.total_bet > 0 && !p.is_eliminated) {
                     this._drawPlayerChips(ctx, p.total_bet, positions[i], tableX, tableY, tableW, tableH);
                 }
+            }
+        });
+
+        // 绘制推理气泡（在所有玩家之上，避免被遮挡）
+        players.forEach((p, i) => {
+            if (i < positions.length && this._reasoningBubbles[p.id]) {
+                const bubble = this._reasoningBubbles[p.id];
+                this._drawReasoningBubble(ctx, bubble.text, positions[i].x, positions[i].y);
             }
         });
     },
@@ -244,8 +257,8 @@ const PokerTable = {
         const chipX = pos.x + (tableCX - pos.x) * 0.45;
         const chipY = pos.y + (tableCY - pos.y) * 0.45;
 
-        const coinR = 7;
-        const stackGap = 3; // 堆叠间距
+        const coinR = 9;
+        const stackGap = 4; // 堆叠间距
 
         // 画金币堆（最多每列5个）
         const cols = Math.ceil(coinCount / 5);
@@ -259,9 +272,9 @@ const PokerTable = {
 
         // 金额文字
         ctx.fillStyle = '#FFD700';
-        ctx.font = '9px "Press Start 2P", monospace';
+        ctx.font = '12px "Press Start 2P", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`$${totalBet}`, chipX, chipY + coinR + 12);
+        ctx.fillText(`$${totalBet}`, chipX, chipY + coinR + 14);
     },
 
     _drawPlayer(ctx, player, pos, isDealer, playerIndex, isThinking, blindTag) {
@@ -344,12 +357,12 @@ const PokerTable = {
 
         // 状态文字（覆盖在手牌区域）
         if (player.is_eliminated) {
-            ctx.fillStyle = '#5A6A7A';
+            ctx.fillStyle = '#E06060';
             ctx.font = '12px "Press Start 2P", monospace';
             ctx.textAlign = 'center';
             ctx.fillText('淘汰', x + totalW / 2, cardsY + cardH / 2 + 4);
         } else if (player.folded) {
-            ctx.fillStyle = '#5A6A7A';
+            ctx.fillStyle = '#B0C4D8';
             ctx.font = '12px "Press Start 2P", monospace';
             ctx.textAlign = 'center';
             ctx.fillText('弃牌', x + totalW / 2, cardsY + cardH / 2 + 4);
@@ -438,6 +451,146 @@ const PokerTable = {
                 CardRenderer.drawCardBack(ctx, x, startY, cardScale);
             }
         }
+    },
+
+    // 设置玩家推理气泡（每个玩家保留自己的气泡，直到该玩家下次思考时才清除）
+    setReasoning(playerId, text) {
+        if (!text) return;
+        const trimmed = text.length > 80 ? text.slice(0, 78) + '…' : text;
+        this._reasoningBubbles[playerId] = { text: trimmed };
+        this._render();
+    },
+
+    // 清除指定玩家的气泡（在该玩家开始新一轮思考时调用）
+    clearPlayerBubble(playerId) {
+        delete this._reasoningBubbles[playerId];
+    },
+
+    // 清除所有气泡（在新一手牌开始时调用）
+    clearReasoningBubbles() {
+        this._reasoningBubbles = {};
+    },
+
+    // 清除过期气泡（保留兼容）
+    _cleanExpiredBubbles() {
+    },
+
+    // 绘制推理气泡（自动换行，大小自适应，智能方向）
+    _drawReasoningBubble(ctx, text, centerX, centerY) {
+        ctx.save();
+
+        const fontSize = 13;
+        const lineHeight = 18;
+        const padding = 10;
+        const maxLineWidth = 220;
+        const tailH = 8;
+
+        ctx.font = `${fontSize}px "Zpix", monospace`;
+
+        // 自动换行
+        const lines = [];
+        let currentLine = '';
+        for (let i = 0; i < text.length; i++) {
+            const testLine = currentLine + text[i];
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxLineWidth && currentLine.length > 0) {
+                lines.push(currentLine);
+                currentLine = text[i];
+            } else {
+                currentLine = testLine;
+            }
+        }
+        if (currentLine) lines.push(currentLine);
+
+        // 计算气泡尺寸
+        let bubbleContentW = 0;
+        for (const line of lines) {
+            const w = ctx.measureText(line).width;
+            if (w > bubbleContentW) bubbleContentW = w;
+        }
+        const bubbleW = Math.max(bubbleContentW + padding * 2, 80);
+        const bubbleH = lines.length * lineHeight + padding * 2;
+
+        // 玩家框大致尺寸（用于偏移，包含动作气泡）
+        const playerBoxH = 120;  // 玩家框~90 + 动作气泡~26 + 间距
+        const playerBoxW = 130;
+
+        // 气泡放到远离牌桌中心的方向（避免覆盖筹码）
+        // 上半部分玩家 → 气泡放上方；下半部分玩家 → 气泡放下方
+        let bubbleX, bubbleY, tailDir;
+        if (centerY < this.H / 2) {
+            // 玩家在上半部分，气泡放上方（远离牌桌中心，额外避开动作气泡）
+            bubbleY = centerY - playerBoxH / 2 - bubbleH - tailH - 30;
+            tailDir = 'down';
+        } else {
+            // 玩家在下半部分，气泡放下方（远离牌桌中心）
+            bubbleY = centerY + playerBoxH / 2 + tailH + 8;
+            tailDir = 'up';
+        }
+        bubbleX = centerX - bubbleW / 2;
+
+        // 边界钳制
+        const clampedX = Math.max(4, Math.min(this.W - bubbleW - 4, bubbleX));
+        const clampedY = Math.max(4, Math.min(this.H - bubbleH - 4, bubbleY));
+
+        // 半透明背景（更深更明显）
+        ctx.fillStyle = 'rgba(10, 25, 50, 0.95)';
+        ctx.fillRect(clampedX, clampedY, bubbleW, bubbleH);
+
+        // 像素风边框（更亮）
+        ctx.strokeStyle = 'rgba(135, 206, 235, 0.8)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(clampedX, clampedY, bubbleW, bubbleH);
+
+        // 尾巴（像素方块三角）
+        const tailX = Math.max(clampedX + 10, Math.min(clampedX + bubbleW - 18, centerX - 4));
+        if (tailDir === 'down') {
+            // 尾巴朝下（气泡在上方）
+            const ty = clampedY + bubbleH;
+            ctx.fillStyle = 'rgba(10, 25, 50, 0.95)';
+            ctx.fillRect(tailX, ty, 8, 4);
+            ctx.fillRect(tailX + 2, ty + 4, 4, 4);
+            // 尾巴边框
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
+            ctx.fillRect(tailX - 1, ty, 1, 4);
+            ctx.fillRect(tailX + 8, ty, 1, 4);
+            ctx.fillRect(tailX + 1, ty + 4, 1, 4);
+            ctx.fillRect(tailX + 6, ty + 4, 1, 4);
+            ctx.fillRect(tailX + 2, ty + 8, 4, 1);
+        } else {
+            // 尾巴朝上（气泡在下方）
+            const ty = clampedY;
+            ctx.fillStyle = 'rgba(10, 25, 50, 0.95)';
+            ctx.fillRect(tailX + 2, ty - 8, 4, 4);
+            ctx.fillRect(tailX, ty - 4, 8, 4);
+            // 尾巴边框
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.8)';
+            ctx.fillRect(tailX + 2, ty - 9, 4, 1);
+            ctx.fillRect(tailX + 1, ty - 8, 1, 4);
+            ctx.fillRect(tailX + 6, ty - 8, 1, 4);
+            ctx.fillRect(tailX - 1, ty - 4, 1, 4);
+            ctx.fillRect(tailX + 8, ty - 4, 1, 4);
+        }
+
+        // 左侧金色装饰线
+        ctx.fillStyle = 'rgba(212, 168, 84, 0.6)';
+        ctx.fillRect(clampedX, clampedY, 3, bubbleH);
+
+        // 💭 标识（右上角）
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.4)';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('💭', clampedX + bubbleW - 4, clampedY + 14);
+
+        // 文字内容
+        ctx.fillStyle = 'rgba(220, 235, 255, 0.95)';
+        ctx.font = `${fontSize}px "Zpix", monospace`;
+        ctx.textAlign = 'left';
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], clampedX + padding, clampedY + padding + (i + 1) * lineHeight - 3);
+        }
+
+        ctx.restore();
     },
 
     // 全屏像素网格背景

@@ -79,9 +79,12 @@ class LLMAIPlayer(AIPlayer):
                 )
 
                 content = response.choices[0].message.content.strip()
+                logger.info(f"[{self.name}] LLM 原始响应: {content[:500]}")
                 action = self._parse_response(content, available)
                 if action:
                     return action
+                else:
+                    logger.warning(f"[{self.name}] 解析返回 None, 完整内容: {content}")
 
             except asyncio.TimeoutError:
                 logger.warning(
@@ -100,27 +103,111 @@ class LLMAIPlayer(AIPlayer):
 
     def _parse_response(self, content: str, available: dict) -> Optional[dict]:
         """解析 LLM 响应，提取动作"""
-        # 尝试直接 JSON 解析
-        try:
-            # 提取 JSON 块
-            json_match = re.search(r'\{[^}]+\}', content, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group())
-                action_type = data.get("action", "").lower().strip()
-                amount = int(data.get("amount", 0))
-                reasoning = data.get("reasoning", "")
 
+        def extract_json_objects(text):
+            """从文本中提取所有可能的 JSON 对象，支持字符串内的花括号"""
+            results = []
+            i = 0
+            while i < len(text):
+                if text[i] == '{':
+                    # 尝试从这个位置提取 JSON
+                    depth = 0
+                    in_string = False
+                    escape = False
+                    for j in range(i, len(text)):
+                        ch = text[j]
+                        if escape:
+                            escape = False
+                            continue
+                        if ch == '\\' and in_string:
+                            escape = True
+                            continue
+                        if ch == '"' and not escape:
+                            in_string = not in_string
+                            continue
+                        if not in_string:
+                            if ch == '{':
+                                depth += 1
+                            elif ch == '}':
+                                depth -= 1
+                                if depth == 0:
+                                    candidate = text[i:j + 1]
+                                    try:
+                                        obj = json.loads(candidate)
+                                        results.append(obj)
+                                    except json.JSONDecodeError:
+                                        pass
+                                    i = j + 1
+                                    break
+                    else:
+                        i += 1
+                else:
+                    i += 1
+            return results
+
+        # 预处理：去除 markdown 代码块标记
+        cleaned = content
+        cleaned = re.sub(r'```(?:json)?\s*', '', cleaned)
+        cleaned = re.sub(r'```', '', cleaned)
+
+        # 方法1：先尝试直接 json.loads 整段内容
+        try:
+            data = json.loads(cleaned)
+            if isinstance(data, dict):
+                action_type = str(data.get("action", "")).lower().strip()
                 if action_type in ("fold", "check", "call", "raise", "all_in"):
-                    # 验证动作合法性
-                    validated = self._validate_action(
-                        action_type, amount, available
-                    )
+                    amount = int(data.get("amount", 0))
+                    reasoning = data.get("reasoning", "")
+                    validated = self._validate_action(action_type, amount, available)
                     validated["reasoning"] = reasoning
+                    logger.info(f"[解析成功-直接JSON] action={action_type}")
                     return validated
         except (json.JSONDecodeError, ValueError, TypeError):
             pass
 
-        # 正则 fallback
+        # 方法2：括号匹配提取 JSON
+        try:
+            json_objects = extract_json_objects(cleaned)
+            logger.info(f"[解析] 提取到 {len(json_objects)} 个 JSON 对象")
+            for idx, data in enumerate(json_objects):
+                if not isinstance(data, dict):
+                    logger.info(f"[解析] JSON #{idx} 不是 dict: {type(data)}")
+                    continue
+                action_type = str(data.get("action", "")).lower().strip()
+                logger.info(f"[解析] JSON #{idx} action='{action_type}', keys={list(data.keys())}")
+                if action_type in ("fold", "check", "call", "raise", "all_in"):
+                    amount = int(data.get("amount", 0))
+                    reasoning = data.get("reasoning", "")
+                    validated = self._validate_action(
+                        action_type, amount, available
+                    )
+                    validated["reasoning"] = reasoning
+                    logger.info(f"[解析成功-括号匹配] action={action_type}")
+                    return validated
+                else:
+                    logger.warning(f"[解析] action '{action_type}' 不在合法列表中")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"JSON 解析异常: {e}")
+
+        # 方法3：宽松正则提取 JSON 字段
+        try:
+            action_re = re.search(r'"action"\s*:\s*"(\w+)"', cleaned, re.IGNORECASE)
+            amount_re = re.search(r'"amount"\s*:\s*(\d+)', cleaned)
+            reasoning_re = re.search(r'"reasoning"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned, re.DOTALL)
+            if action_re:
+                action_type = action_re.group(1).lower().strip()
+                if action_type in ("fold", "check", "call", "raise", "all_in"):
+                    amount = int(amount_re.group(1)) if amount_re else 0
+                    reasoning = reasoning_re.group(1) if reasoning_re else ""
+                    validated = self._validate_action(action_type, amount, available)
+                    validated["reasoning"] = reasoning
+                    logger.info(f"[解析成功-正则字段] action={action_type}")
+                    return validated
+        except (ValueError, TypeError) as e:
+            logger.warning(f"正则字段提取异常: {e}")
+
+        # 方法4：最后的 fallback
+        logger.warning(f"[解析走fallback] 原始内容: {content[:300]}")
         action_match = re.search(
             r'(fold|check|call|raise|all_in)', content.lower()
         )
@@ -131,8 +218,19 @@ class LLMAIPlayer(AIPlayer):
             if amount_match and action_type == "raise":
                 amount = int(amount_match.group(1))
 
+            # 尝试从文本中提取推理内容
+            reasoning = ""
+            reason_match = re.search(
+                r'(?:reasoning|理由|原因|分析)["\s:：]*["\s]*(.+?)(?:["\s]*[,}]|$)',
+                content, re.DOTALL
+            )
+            if reason_match:
+                reasoning = reason_match.group(1).strip().strip('"').strip()
+            if not reasoning:
+                reasoning = "（LLM 响应解析 fallback）"
+
             validated = self._validate_action(action_type, amount, available)
-            validated["reasoning"] = "（LLM 响应解析 fallback）"
+            validated["reasoning"] = reasoning
             return validated
 
         return None
