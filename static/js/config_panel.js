@@ -47,6 +47,8 @@ const ConfigPanel = {
                         name: p.name || `AI-${this.playerCount}`,
                         style: p.style || '均衡',
                         model_id: p.model_id || '',
+                        player_type: p.player_type || 'ai',
+                        controller_id: p.controller_id || 'admin',
                     });
                 });
                 this.render();
@@ -87,6 +89,8 @@ const ConfigPanel = {
             name: `AI-${this.playerCount}`,
             style: '均衡',
             model_id: '',
+            player_type: 'ai',
+            controller_id: 'admin',
         });
 
         this.render();
@@ -108,6 +112,7 @@ const ConfigPanel = {
         const models = ModelPanel.models || [];
 
         container.innerHTML = this.players.map((p, i) => {
+            const playerType = p.player_type || 'ai';
             const styleOptions = STYLE_OPTIONS.map(s =>
                 `<option value="${s.name}" ${p.style === s.name ? 'selected' : ''}>${s.name}</option>`
             ).join('');
@@ -118,6 +123,19 @@ const ConfigPanel = {
 
             const styleBadge = STYLE_OPTIONS.find(s => s.name === p.style);
             const badgeColor = styleBadge ? styleBadge.color : '#87CEEB';
+            const modelField = playerType === 'human'
+                ? `<div class="form-group">
+                        <label class="form-label">控制</label>
+                        <input class="pixel-input" value="管理员本人" disabled>
+                   </div>`
+                : `<div class="form-group">
+                        <label class="form-label">模型</label>
+                        <select class="pixel-select"
+                                onchange="ConfigPanel.updatePlayer('${p.id}', 'model_id', this.value)">
+                            <option value="">-- 请选择 --</option>
+                            ${modelOptions}
+                        </select>
+                   </div>`;
 
             return `
                 <div class="player-card">
@@ -134,20 +152,21 @@ const ConfigPanel = {
                                onchange="ConfigPanel.updatePlayer('${p.id}', 'name', this.value)">
                     </div>
                     <div class="form-group">
+                        <label class="form-label">类型</label>
+                        <select class="pixel-select"
+                                onchange="ConfigPanel.updatePlayer('${p.id}', 'player_type', this.value)">
+                            <option value="ai" ${playerType === 'ai' ? 'selected' : ''}>AI</option>
+                            <option value="human" ${playerType === 'human' ? 'selected' : ''}>人类</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">风格</label>
                         <select class="pixel-select"
                                 onchange="ConfigPanel.updatePlayer('${p.id}', 'style', this.value)">
                             ${styleOptions}
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">模型</label>
-                        <select class="pixel-select"
-                                onchange="ConfigPanel.updatePlayer('${p.id}', 'model_id', this.value)">
-                            <option value="">-- 请选择 --</option>
-                            ${modelOptions}
-                        </select>
-                    </div>
+                    ${modelField}
                 </div>
             `;
         }).join('');
@@ -156,8 +175,19 @@ const ConfigPanel = {
     updatePlayer(id, field, value) {
         const player = this.players.find(p => p.id === id);
         if (player) {
+            if (field === 'player_type' && value === 'human') {
+                const hasOtherHuman = this.players.some(p => p.id !== id && p.player_type === 'human');
+                if (hasOtherHuman) {
+                    alert('当前版本最多支持 1 位人类玩家');
+                    this.render();
+                    return;
+                }
+            }
             player[field] = value;
-            if (field === 'style') {
+            if (field === 'player_type' && value === 'human') {
+                player.controller_id = 'admin';
+            }
+            if (field === 'style' || field === 'player_type') {
                 this.render();
             }
         }
@@ -165,12 +195,17 @@ const ConfigPanel = {
 
     async saveConfig() {
         // 验证
+        const humanCount = this.players.filter(p => (p.player_type || 'ai') === 'human').length;
+        if (humanCount > 1) {
+            alert('当前版本最多支持 1 位人类玩家');
+            return;
+        }
         for (const p of this.players) {
             if (!p.name) {
                 alert('所有玩家都需要填写名称');
                 return;
             }
-            if (!p.model_id) {
+            if ((p.player_type || 'ai') === 'ai' && !p.model_id) {
                 alert(`玩家"${p.name}"需要选择模型`);
                 return;
             }
@@ -180,7 +215,9 @@ const ConfigPanel = {
             players: this.players.map(p => ({
                 name: p.name,
                 style: p.style,
-                model_id: p.model_id,
+                model_id: (p.player_type || 'ai') === 'human' ? '' : p.model_id,
+                player_type: p.player_type || 'ai',
+                controller_id: p.controller_id || 'admin',
             })),
             big_blind: parseInt(document.getElementById('settingBigBlind').value) || 100,
             starting_chips: parseInt(document.getElementById('settingChips').value) || 10000,

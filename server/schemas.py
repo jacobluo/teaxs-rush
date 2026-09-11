@@ -1,7 +1,7 @@
 """Pydantic 数据模型定义"""
 
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal
 from datetime import datetime
 
 
@@ -40,7 +40,9 @@ class ModelConfigPublic(BaseModel):
 class AIPlayerConfig(BaseModel):
     name: str
     style: str       # 激进/保守/均衡/诈唬/诡计
-    model_id: str    # 引用 ModelConfig.id
+    model_id: str = ""    # 引用 ModelConfig.id，human 可为空
+    player_type: Literal["ai", "human"] = "ai"
+    controller_id: str = "admin"
 
 
 class GameConfig(BaseModel):

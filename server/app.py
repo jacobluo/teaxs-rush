@@ -102,13 +102,25 @@ async def configure_game(config: GameConfig, admin: str = Depends(get_current_ad
         raise HTTPException(status_code=400, detail="至少需要 2 个玩家")
     if len(config.players) > 9:
         raise HTTPException(status_code=400, detail="最多 9 个玩家")
-    await game_manager.configure_game(config)
+    try:
+        await game_manager.configure_game(config)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {"status": "ok"}
 
 
 @router.get("/api/game/state")
 async def get_game_state():
     return game_manager.get_state()
+
+
+@router.post("/api/game/practice")
+async def start_practice(admin: str = Depends(get_current_admin)):
+    try:
+        await game_manager.start_practice()
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return {"status": "ok"}
 
 
 # ========== WebSocket ==========
@@ -125,7 +137,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 token = message.get("token", "")
 
                 # 游戏控制消息需要验证 token
-                if msg_type in ("start", "pause", "resume", "step", "reset"):
+                if msg_type in ("start", "pause", "resume", "step", "reset", "human_action"):
                     if not verify_token(token):
                         await websocket.send_json({
                             "type": "error",
@@ -143,6 +155,17 @@ async def websocket_endpoint(websocket: WebSocket):
                         await game_manager.step_game()
                     elif msg_type == "reset":
                         await game_manager.reset_game()
+                    elif msg_type == "human_action":
+                        result = await game_manager.submit_human_action(
+                            request_id=message.get("request_id", ""),
+                            action_type=message.get("action", ""),
+                            amount=message.get("amount", 0),
+                        )
+                        if result.get("status") != "ok":
+                            await websocket.send_json({
+                                "type": "error",
+                                "data": {"message": result.get("message", "操作失败")},
+                            })
 
             except json.JSONDecodeError:
                 pass

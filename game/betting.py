@@ -45,7 +45,7 @@ class BettingRound:
             "can_fold": True,
             "can_check": to_call == 0,
             "can_call": to_call > 0 and to_call < player.chips,
-            "can_raise": player.chips > to_call,
+            "can_raise": player.chips > to_call and player.current_bet + player.chips >= min_raise_to,
             "can_all_in": player.chips > 0,
             "to_call": to_call,
             "min_raise_to": min_raise_to,

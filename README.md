@@ -1,6 +1,6 @@
 # 🃏 Texas Rush - AI 德州扑克大乱斗
 
-一个基于 Web 的 AI 对战德州扑克系统。多个由大语言模型（LLM）驱动的 AI 玩家在牌桌上自动对战，人类用户通过浏览器实时观看 AI 之间的博弈过程。
+一个基于 Web 的 AI 对战德州扑克系统。支持真人参与、内置电脑练习和大语言模型（LLM）对战。打开浏览器即可观战，房间管理员登录后可以入座。
 
 ## 特性
 
@@ -8,7 +8,10 @@
 - **LLM 驱动的 AI 决策** — 支持 OpenAI 兼容 API（可接入各类大模型）
 - **5 种 AI 风格** — 激进、保守、均衡、诈唬、诡计，各有独特人格
 - **跨手牌记忆** — 每个 AI 维护最近 10 手牌摘要，注入对话上下文
-- **实时像素风可视化** — Canvas 渲染 + WebSocket 实时推送
+- **直接入座练习** — 1 位真人与 3 位内置电脑对手，无需 API Key；练习不覆盖已保存配置
+- **清晰的响应式牌桌** — 桌面环形座位、手机纵向布局，保留角色头像
+- **真人行动区** — 弃牌 / 过牌 / 跟注 / 加注至 / 全押，显示底牌和 120 秒倒计时；暂停保留剩余时间
+- **断线恢复** — 重新连接后恢复当前操作请求，重复点击只提交一次
 - **游戏控制** — 开始 / 暂停 / 继续 / 单步 / 重置
 - **管理员后台** — 模型配置、玩家管理、游戏参数调整
 - **多人同时观看** — WebSocket 广播到所有连接客户端
@@ -18,7 +21,7 @@
 ```
 ┌──────────────────────────────────────────┐
 │  前端 (HTML5 Canvas + Vanilla JS)        │
-│  像素风 UI / Canvas 牌桌 / WebSocket     │
+│  响应式 DOM 牌桌 / WebSocket             │
 ├──────────────────────────────────────────┤
 │  后端 (FastAPI + Uvicorn)                │
 │  REST API + WebSocket + JWT 认证         │
@@ -42,7 +45,7 @@
 | AI 调用 | OpenAI Python SDK (AsyncOpenAI) |
 | 数据校验 | Pydantic v2 |
 | 认证 | python-jose (JWT) |
-| 前端 | HTML5 Canvas + Vanilla JS |
+| 前端 | HTML / CSS + Vanilla JS，Canvas 角色头像 |
 | 通信 | WebSocket |
 | 容器化 | Docker + docker-compose |
 
@@ -72,11 +75,25 @@ docker-compose up -d
 
 ## 使用流程
 
-1. 访问主页，默认为观众模式，可实时观看牌桌
-2. 点击「登录」输入密码进入管理员模式
-3. 在「模型」Tab 添加 LLM 模型配置（名称 / API Key / Base URL / Model Name）
-4. 在「玩家」Tab 配置 2-9 个 AI 玩家（名称 / 风格 / 关联模型）及游戏参数
-5. 点击「开始」，AI 自动对战，所有人实时观看
+1. 点击「入座练习」，输入房间管理员密码后，自动与 3 位电脑对手开始 10 手练习。
+2. 你的座位在牌桌下方；轮到你时，操作区会显示底牌、可执行动作和剩余时间。「加注至」是本轮下注总额。
+3. 真人对局中，对手底牌在结算前隐藏；没有真人的 AI 对战保留公开观战。
+4. 如果需要大模型对战，登录后进入「模型管理」添加模型，再在「牌桌设置」选择玩家类型和关联模型，保存后点击「开始」。最多 9 个座位，其中最多 1 位真人。
+5. 「暂停」保留真人剩余操作时间，「继续」恢复；刷新或短暂断线后可继续当前操作。
+
+练习对手采用简单的过牌、跟注和弃牌规则，适合熟悉流程。更丰富的策略可通过已配置的大模型对手体验。所有筹码仅用于游戏练习。
+
+手机和电脑在同一局域网时，可通过 `http://电脑局域网IP:8000` 访问。登录仍使用同一房间密码。
+
+## 验证
+
+```bash
+python3 -m unittest discover -s tests -v
+node --test tests/test_frontend.cjs
+python3 -m compileall -q ai engine game server main.py tests
+git diff --check
+```
+
 
 ## API
 
@@ -93,13 +110,16 @@ docker-compose up -d
 | `DELETE` | `/api/models/{id}` | 管理员 | 删除模型 |
 | `GET` | `/api/game/saved-config` | 管理员 | 获取游戏配置 |
 | `POST` | `/api/game/config` | 管理员 | 配置游戏 |
-| `GET` | `/api/game/state` | 公开 | 获取游戏状态 |
+| `GET` | `/api/game/state` | 公开 | 获取游戏状态和待操作请求 |
+| `POST` | `/api/game/practice` | 管理员 | 开始内置电脑练习；牌局进行中返回 409 |
 
 ### WebSocket
 
 连接 `ws://host/ws`，通过消息体中的 `type` 字段发送控制指令（需携带 `token`）：
 
-`start` / `pause` / `resume` / `step` / `reset`
+`start` / `pause` / `resume` / `step` / `reset` / `human_action`
+
+真人动作携带 `request_id`、`action`、`amount` 和管理员 `token`。`human_action_request` 含可用动作与 `expires_at`（Unix 秒；暂停时为空），重连快照也包含待操作请求。
 
 ## AI 风格
 

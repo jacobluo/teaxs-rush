@@ -158,43 +158,23 @@ const PokerTable = {
         return positions;
     },
 
-    _drawAvatar(ctx, x, y, size, playerIndex, isEliminated, isFolded) {
-        const color = this.avatarColors[playerIndex % this.avatarColors.length];
+    _drawAvatar(ctx, x, y, size, playerIndex, isEliminated, isFolded, style) {
         const alpha = (isEliminated || isFolded) ? 0.4 : 1.0;
 
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        ctx.fillStyle = color;
+        // 背景底色
+        ctx.fillStyle = '#0B1929';
         ctx.fillRect(x, y, size, size);
 
+        // 绘制卡通头像
+        AvatarRenderer.drawAvatar(ctx, style, x, y, size);
+
+        // 边框
         ctx.strokeStyle = isEliminated ? '#5A6A7A' : '#E0F0FF';
         ctx.lineWidth = 2;
         ctx.strokeRect(x, y, size, size);
-
-        const cx = x + size / 2;
-        const cy = y + size / 2;
-        const ps = Math.max(2, Math.floor(size / 12));
-
-        // 眼睛
-        ctx.fillStyle = '#0B1929';
-        ctx.fillRect(cx - ps * 2.5, cy - ps * 1.5, ps * 2, ps * 2);
-        ctx.fillRect(cx + ps * 0.5, cy - ps * 1.5, ps * 2, ps * 2);
-
-        // 眼睛高光
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(cx - ps * 2, cy - ps * 1, ps, ps);
-        ctx.fillRect(cx + ps * 1, cy - ps * 1, ps, ps);
-
-        // 嘴巴
-        ctx.fillStyle = '#0B1929';
-        ctx.fillRect(cx - ps * 1.5, cy + ps * 1, ps * 3, ps);
-
-        // AI标记
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = `${Math.floor(size * 0.25)}px "Press Start 2P", monospace`;
-        ctx.textAlign = 'center';
-        ctx.fillText('AI', cx, y + size - 3);
 
         ctx.restore();
     },
@@ -278,7 +258,7 @@ const PokerTable = {
     },
 
     _drawPlayer(ctx, player, pos, isDealer, playerIndex, isThinking, blindTag) {
-        const avatarSize = 28;
+        const avatarSize = 32;
         const cardScale = 1.07;
         const cardW = CardRenderer.CARD_W * cardScale;
         const cardH = CardRenderer.CARD_H * cardScale;
@@ -316,7 +296,7 @@ const PokerTable = {
         ctx.strokeRect(x, y, totalW, totalH);
 
         // 头像（左上）
-        this._drawAvatar(ctx, x + 4, y + 4, avatarSize, playerIndex, player.is_eliminated, player.folded);
+        this._drawAvatar(ctx, x + 4, y + 4, avatarSize, playerIndex, player.is_eliminated, player.folded, player.style);
 
         // 风格色块
         const styleColors = {

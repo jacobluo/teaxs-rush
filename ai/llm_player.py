@@ -12,6 +12,7 @@ from openai import AsyncOpenAI
 from ai.base import AIPlayer
 from ai.styles import STYLES
 from ai.prompt_builder import PromptBuilder
+from game.actions import normalize_action
 
 logger = logging.getLogger(__name__)
 
@@ -237,29 +238,7 @@ class LLMAIPlayer(AIPlayer):
 
     def _validate_action(self, action_type: str, amount: int, available: dict) -> dict:
         """验证并修正动作合法性"""
-        if action_type == "check" and available.get("can_check"):
-            return {"type": "check", "amount": 0}
-        elif action_type == "call" and available.get("can_call"):
-            return {"type": "call", "amount": available.get("to_call", 0)}
-        elif action_type == "raise" and available.get("can_raise"):
-            min_raise_to = available.get("min_raise_to", 0)
-            max_raise_to = available.get("max_raise_to", 0)
-            if amount < min_raise_to:
-                amount = min_raise_to
-            elif amount > max_raise_to:
-                amount = max_raise_to
-            return {"type": "raise", "amount": amount}
-        elif action_type == "all_in" and available.get("can_all_in"):
-            return {"type": "all_in", "amount": 0}
-        elif action_type == "fold":
-            return {"type": "fold", "amount": 0}
-
-        # 动作不可用，自动修正
-        if available.get("can_check"):
-            return {"type": "check", "amount": 0}
-        if available.get("can_call"):
-            return {"type": "call", "amount": available.get("to_call", 0)}
-        return {"type": "fold", "amount": 0}
+        return normalize_action(action_type, amount, available)
 
     def _fallback_action(self, available: dict) -> dict:
         """所有 LLM 调用失败时的兜底策略"""

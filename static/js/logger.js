@@ -106,6 +106,21 @@ const GameLogger = {
                 break;
             }
 
+            case 'human_action_request':
+                playerName = data.player_name;
+                text = `${playerName} 等待人类操作`;
+                cssClass = 'thinking';
+                break;
+
+            case 'human_action_timeout':
+                playerName = data.player_name;
+                text = `${playerName} 操作超时，系统已自动处理`;
+                cssClass = 'error';
+                break;
+
+            case 'human_action_clear':
+                return;
+
             case 'hand_complete':
                 if (data.winners) {
                     data.winners.forEach(w => {
@@ -162,9 +177,13 @@ const GameLogger = {
                 this._playerCounter = 0;
                 break;
 
+            case 'error':
+                text = data.message || '操作失败';
+                cssClass = 'error';
+                break;
+
             default:
-                text = `[${type}] ${JSON.stringify(data).slice(0, 100)}`;
-                cssClass = 'system';
+                return;
         }
 
         if (text) {

@@ -13,6 +13,8 @@ class Player:
     chips: int = 10000
     style: str = "均衡"
     model_id: str = ""
+    player_type: str = "ai"
+    controller_id: str = "admin"
 
     # 每手牌状态（每手重置）
     hand: List[Card] = field(default_factory=list)
@@ -65,6 +67,8 @@ class Player:
             "name": self.name,
             "chips": self.chips,
             "style": self.style,
+            "player_type": self.player_type,
+            "controller_id": self.controller_id,
             "folded": self.folded,
             "all_in": self.all_in,
             "current_bet": self.current_bet,

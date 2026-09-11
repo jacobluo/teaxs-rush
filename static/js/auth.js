@@ -28,6 +28,7 @@ function showLoginModal() {
 }
 
 function hideLoginModal() {
+    practiceAfterLogin = false;
     document.getElementById('loginModal').classList.remove('active');
 }
 
@@ -50,12 +51,15 @@ async function doLogin() {
         if (res.ok) {
             const data = await res.json();
             setToken(data.token);
+            const shouldJoin = practiceAfterLogin;
             hideLoginModal();
             updateUIForRole();
             GameLogger.addSystem('管理员登录成功');
             // 登录成功后加载模型列表和已保存的游戏配置
             await ModelPanel.loadModels();
             await ConfigPanel.loadSavedConfig();
+            await fetchAndUpdateState();
+            if (shouldJoin) await joinPractice();
         } else {
             errorEl.textContent = '密码错误';
         }
@@ -72,6 +76,8 @@ function logout() {
 
 function updateUIForRole() {
     const admin = isAdmin();
+    if (!admin) hideHumanActionPanel();
+    else if (pendingHumanAction) renderHumanActionPanel(pendingHumanAction);
 
     if (admin) {
         document.body.classList.add('is-admin');
