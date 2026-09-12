@@ -6,7 +6,7 @@
     <title>Texas Rush · 德州大乱斗</title>
     <meta name="theme-color" content="#102621">
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260909c">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260912-status-font">
 </head>
 <body>
     <!-- ===== Navbar ===== -->
@@ -15,6 +15,7 @@
             <span class="brand-mark">♠</span><div><span class="pixel-title">TEXAS RUSH</span><span class="brand-caption">德州大乱斗</span></div>
         </div>
         <div class="navbar-controls">
+            <button class="pixel-btn pixel-btn-small pixel-btn-primary" id="btnJoin" onclick="joinPractice()">入座练习</button>
             <span id="connectionStatus" class="connection-status disconnected">● 离线</span>
 
             <!-- 游戏控制按钮（管理员专属） -->
@@ -36,11 +37,7 @@
     <div class="main-container">
         <!-- Left: Canvas Table -->
         <div class="table-area">
-            <header class="table-header">
-                <div><span class="eyebrow" id="tableMode">AI 对战 · 观战席</span><h1>练习牌桌 <span class="room-tag">01</span></h1><p id="tableHint">与 3 位电脑对手练习，无需配置模型。入座需房间管理员登录。</p></div>
-                <button class="pixel-btn pixel-btn-primary join-button" id="btnJoin" onclick="joinPractice()">入座练习 <span>↗</span></button>
-            </header>
-            <div class="table-notice" id="tableNotice" role="status">欢迎来到牌桌。所有筹码仅用于游戏练习。</div>
+            <div class="table-notice" id="tableNotice" role="status"></div>
             <div class="poker-table" id="pokerTable" aria-label="德州扑克牌桌"></div>
             <div class="human-action-panel" id="humanActionPanel" role="region" aria-label="你的操作">
                 <div class="action-summary"><div class="human-action-info">
@@ -151,12 +148,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/auth.js?v=20260909c"></script>
-    <script src="/static/js/avatar_renderer.js?v=20260909c"></script>
-    <script src="/static/js/table_view.js?v=20260909c"></script>
-    <script src="/static/js/logger.js?v=20260909c"></script>
-    <script src="/static/js/model_panel.js?v=20260909c"></script>
-    <script src="/static/js/config_panel.js?v=20260909c"></script>
-    <script src="/static/js/app.js?v=20260909c"></script>
+    <script src="/static/js/auth.js?v=20260912-street-actions"></script>
+    <script src="/static/js/avatar_renderer.js?v=20260912-street-actions"></script>
+    <script src="/static/js/table_view.js?v=20260912-street-actions"></script>
+    <script src="/static/js/logger.js?v=20260912-street-actions"></script>
+    <script src="/static/js/model_panel.js?v=20260912-deepseek"></script>
+    <script src="/static/js/config_panel.js?v=20260912-street-actions"></script>
+    <script src="/static/js/app.js?v=20260912-street-actions"></script>
 </body>
 </html>

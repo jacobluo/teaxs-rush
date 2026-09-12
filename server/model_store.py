@@ -3,8 +3,10 @@
 import json
 import uuid
 import asyncio
+import os
 from pathlib import Path
 from typing import List, Optional
+from dotenv import dotenv_values
 
 from server.schemas import ModelConfig, ModelCreate
 
@@ -24,6 +26,24 @@ class ModelStore:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         if not MODELS_FILE.exists():
             MODELS_FILE.write_text("[]", encoding="utf-8")
+
+    async def sync_environment_model(self, env_file: Path) -> Optional[ModelConfig]:
+        values = dotenv_values(env_file)
+        key = (os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("DeepSeekKey")
+               or values.get("DEEPSEEK_API_KEY") or values.get("DeepSeekKey") or "").strip()
+        if not key:
+            return None
+        async with self._lock:
+            models = self._read_all()
+            entry = {
+                "id": "deepseek-env", "name": "DeepSeek V4 Pro (.env)",
+                "api_key": key, "base_url": "https://api.deepseek.com",
+                "model_name": "deepseek-v4-pro",
+            }
+            models = [m for m in models if m["id"] != entry["id"]]
+            models.insert(0, entry)
+            self._write_all(models)
+            return ModelConfig(**entry)
 
     def _read_all(self) -> List[dict]:
         try:

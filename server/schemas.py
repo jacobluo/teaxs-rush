@@ -17,8 +17,8 @@ class TokenResponse(BaseModel):
 class ModelCreate(BaseModel):
     name: str
     api_key: str
-    base_url: str
-    model_name: str
+    base_url: str = "https://api.deepseek.com"
+    model_name: str = "deepseek-v4-pro"
 
 
 class ModelConfig(BaseModel):

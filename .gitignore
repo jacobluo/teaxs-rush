@@ -33,3 +33,6 @@ data/
 
 # CodeBuddy
 .codebuddy/
+
+# Local deployment credentials
+.deployment/

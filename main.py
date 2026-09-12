@@ -3,12 +3,14 @@
 import logging
 import uvicorn
 from pathlib import Path
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from server.app import router
+from server.model_store import model_store
 
 # 日志配置
 logging.basicConfig(
@@ -16,7 +18,13 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-app = FastAPI(title="AI Texas Hold'em")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await model_store.sync_environment_model(Path(__file__).parent / ".env")
+    yield
+
+
+app = FastAPI(title="AI Texas Hold'em", lifespan=lifespan)
 
 # CORS
 app.add_middleware(

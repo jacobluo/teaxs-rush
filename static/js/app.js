@@ -85,6 +85,7 @@ function updateConnectionStatus(connected) {
 // ========== 游戏事件处理 ==========
 function handleGameEvent(message) {
     const { type, data } = message;
+    stateFetchCounter++;
 
     // 更新日志
     GameLogger.addLog(message);
@@ -103,16 +104,24 @@ function handleGameEvent(message) {
             break;
 
         case 'hand_start':
+            PokerTable.updateState({...PokerTable.state, hand_number:data.hand_number, stage:'preflop', hand_result:null});
             updateStatusBar(data);
             break;
 
-        case 'deal_hole_cards':
         case 'community_cards':
+            PokerTable.updateState({...PokerTable.state, stage:data.stage, community_cards:data.cards, thinking_player_id:null,
+                players:(PokerTable.state?.players || []).map(p => ({...p, last_action:'', last_action_amount:0, current_bet:0}))});
+            updateStage(data.stage);
+            fetchAndUpdateState();
+            break;
+
+        case 'deal_hole_cards':
             // 请求最新状态
             fetchAndUpdateState();
             break;
 
         case 'player_action':
+            PokerTable.showAction(data);
             // 传递推理过程到牌桌气泡（气泡持续到下一个玩家出牌）
             if (data.reasoning && data.player?.id) {
                 PokerTable.setReasoning(data.player.id, data.reasoning);
@@ -135,6 +144,7 @@ function handleGameEvent(message) {
         case 'human_action_request':
             pendingHumanAction = data;
             renderHumanActionPanel(data);
+            fetchAndUpdateState();
             break;
 
         case 'human_action_clear':
@@ -154,6 +164,7 @@ function handleGameEvent(message) {
             break;
 
         case 'hand_complete':
+            PokerTable.showHandResult(data);
             showNotice((data.winners || []).map(w => `${w.player.name} 赢得 ${w.amount.toLocaleString()} 筹码`).join(' · '));
             PokerTable.clearReasoningBubbles();
             fetchAndUpdateState();
@@ -161,6 +172,11 @@ function handleGameEvent(message) {
 
         case 'game_paused':
         case 'game_resumed':
+            PokerTable.updateState({...PokerTable.state, is_paused: type === 'game_paused'});
+            updateTableControls(PokerTable.state);
+            fetchAndUpdateState();
+            break;
+
         case 'game_start':
             fetchAndUpdateState();
             break;
@@ -417,8 +433,6 @@ function updateTableControls(state) {
     document.getElementById('btnStart').disabled = running || !state.players?.length || state.stage === 'game_over';
     document.getElementById('btnJoin').disabled = running;
     document.getElementById('btnJoin').textContent = state.stage === 'game_over' ? '再来一局' : running ? '牌局进行中' : '入座练习';
-    document.getElementById('tableMode').textContent = state.players?.some(p => p.player_type === 'human') ? '真人参与 · 练习筹码' : 'AI 对战 · 观战席';
-    document.getElementById('tableHint').textContent = state.stage === 'game_over' ? '本场已结束，点击「再来一局」重新入座。' : state.is_paused ? '牌局已暂停，点击「继续」恢复。' : running ? '绿色边框标记当前行动玩家。' : '与 3 位电脑对手练习，无需配置模型。入座需房间管理员登录。';
     updateActionAvailability();
 }
 

@@ -66,3 +66,15 @@ class BettingRoundTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class AllInResponseTests(unittest.TestCase):
+    def test_checked_player_must_respond_after_opponent_goes_all_in(self):
+        a = Player('a', 'Alice', chips=1000)
+        b = Player('b', 'Bob', chips=1000)
+        betting = BettingRound([a, b], 0, 100)
+        betting.process_check(a)
+        betting.process_all_in(b)
+        self.assertFalse(betting.is_round_complete())
+        self.assertEqual(betting.get_current_player().id, 'a')
+        betting.process_fold(a)
+        self.assertTrue(betting.is_round_complete())

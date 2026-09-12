@@ -6,6 +6,7 @@ import asyncio
 import logging
 from typing import Optional, List, Dict
 from collections import deque
+from urllib.parse import urlsplit
 
 from openai import AsyncOpenAI
 
@@ -33,12 +34,12 @@ class LLMAIPlayer(AIPlayer):
     ):
         super().__init__(player_id, name, style)
         self.api_key = api_key
-        self.base_url = base_url
+        self.base_url = base_url.strip().rstrip("/").removesuffix("/chat/completions")
         self.model_name = model_name
 
         self.client = AsyncOpenAI(
             api_key=api_key,
-            base_url=base_url,
+            base_url=self.base_url,
         )
 
         # 对话上下文记忆
@@ -66,6 +67,11 @@ class LLMAIPlayer(AIPlayer):
 
         messages.append({"role": "user", "content": user_prompt})
 
+        # Keep DeepSeek's short poker reply budget for the action JSON.
+        request_options = {}
+        if urlsplit(self.base_url).hostname == "api.deepseek.com" and self.model_name.startswith("deepseek-v4"):
+            request_options["extra_body"] = {"thinking": {"type": "disabled"}}
+
         # 尝试调用 LLM，含重试
         for attempt in range(3):
             try:
@@ -75,6 +81,7 @@ class LLMAIPlayer(AIPlayer):
                         messages=messages,
                         temperature=0.7,
                         max_tokens=500,
+                        **request_options,
                     ),
                     timeout=30,
                 )

@@ -43,7 +43,7 @@ const ModelPanel = {
 
     showAddForm() {
         this.editingId = null;
-        this._renderForm({ name: '', api_key: '', base_url: '', model_name: '' });
+        this._renderForm({ name: 'DeepSeek V4 Pro', api_key: '', base_url: 'https://api.deepseek.com', model_name: 'deepseek-v4-pro' });
     },
 
     showEditForm(id) {
@@ -63,7 +63,7 @@ const ModelPanel = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">名称</label>
-                    <input class="pixel-input" id="modelName" value="${this._escape(data.name)}" placeholder="例如 GPT-4o">
+                    <input class="pixel-input" id="modelName" value="${this._escape(data.name)}" placeholder="例如 DeepSeek V4 Pro">
                 </div>
                 <div class="form-group">
                     <label class="form-label">API 密钥</label>
@@ -71,11 +71,11 @@ const ModelPanel = {
                 </div>
                 <div class="form-group">
                     <label class="form-label">接口地址</label>
-                    <input class="pixel-input" id="modelBaseUrl" value="${this._escape(data.base_url)}" placeholder="https://api.openai.com/v1">
+                    <input class="pixel-input" id="modelBaseUrl" value="${this._escape(data.base_url)}" placeholder="https://api.deepseek.com">
                 </div>
                 <div class="form-group">
                     <label class="form-label">模型名称</label>
-                    <input class="pixel-input" id="modelModelName" value="${this._escape(data.model_name)}" placeholder="gpt-4o">
+                    <input class="pixel-input" id="modelModelName" value="${this._escape(data.model_name)}" placeholder="deepseek-v4-pro">
                 </div>
                 <button class="pixel-btn pixel-btn-primary" style="width:100%" onclick="ModelPanel.saveModel()">保存</button>
             </div>

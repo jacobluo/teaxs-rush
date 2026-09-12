@@ -42,6 +42,8 @@ class Player:
     def reset_for_new_round(self):
         self.current_bet = 0
         self.has_acted = False
+        self.last_action = ""
+        self.last_action_amount = 0
 
     def bet(self, amount: int) -> int:
         """下注，返回实际下注金额（可能因筹码不足而减少）"""

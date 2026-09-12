@@ -47,6 +47,7 @@ class GameController:
 
         self.dealer_index = 0
         self.hand_number = 0
+        self.hand_result = None
         self.stage = GameStage.WAITING
         self.deck = Deck()
         self.pot_manager = PotManager()
@@ -123,6 +124,10 @@ class GameController:
 
             await self._play_one_hand()
 
+            # Keep the settled board visible before dealing the next hand.
+            if self.is_running:
+                await asyncio.sleep(5)
+
             # 单步模式
             if self.step_mode:
                 self._step_event.clear()
@@ -138,6 +143,8 @@ class GameController:
     async def _play_one_hand(self):
         """执行一手牌的完整流程"""
         self.hand_number += 1
+        self.hand_result = None
+        self.stage = GameStage.PREFLOP
         active = self.get_active_players()
 
         # 重置状态
@@ -205,12 +212,13 @@ class GameController:
         # Flop
         self.stage = GameStage.FLOP
         self.community_cards.extend(self.deck.deal(3))
+        for p in active:
+            p.reset_for_new_round()
         await self.emit_event("community_cards", {
             "stage": "flop",
             "cards": [c.to_dict() for c in self.community_cards],
         })
-        for p in active:
-            p.reset_for_new_round()
+        await asyncio.sleep(2)
         flop_start = self._first_active_after(active, self.dealer_index)
         if not await self._run_betting_round(active, flop_start):
             await self._finish_hand(active)
@@ -219,12 +227,13 @@ class GameController:
         # Turn
         self.stage = GameStage.TURN
         self.community_cards.extend(self.deck.deal(1))
+        for p in active:
+            p.reset_for_new_round()
         await self.emit_event("community_cards", {
             "stage": "turn",
             "cards": [c.to_dict() for c in self.community_cards],
         })
-        for p in active:
-            p.reset_for_new_round()
+        await asyncio.sleep(2)
         turn_start = self._first_active_after(active, self.dealer_index)
         if not await self._run_betting_round(active, turn_start):
             await self._finish_hand(active)
@@ -233,12 +242,13 @@ class GameController:
         # River
         self.stage = GameStage.RIVER
         self.community_cards.extend(self.deck.deal(1))
+        for p in active:
+            p.reset_for_new_round()
         await self.emit_event("community_cards", {
             "stage": "river",
             "cards": [c.to_dict() for c in self.community_cards],
         })
-        for p in active:
-            p.reset_for_new_round()
+        await asyncio.sleep(2)
         river_start = self._first_active_after(active, self.dealer_index)
         if not await self._run_betting_round(active, river_start):
             await self._finish_hand(active)
@@ -291,13 +301,14 @@ class GameController:
             action = await self._get_player_action(current_player, available)
 
             # 执行动作
+            chips_before = current_player.chips
             await self._execute_action(current_player, action, betting)
 
             self._thinking_player_id = None
             await self.emit_event("player_action", {
                 "player": current_player.to_dict(),
                 "action": action["type"],
-                "amount": action.get("amount", 0),
+                "amount": current_player.current_bet if action["type"] == "raise" else chips_before - current_player.chips,
                 "reasoning": action.get("reasoning", ""),
                 "pot": self.pot_manager.get_total_pot(),
                 "stage": self.stage.value,
@@ -408,6 +419,8 @@ class GameController:
         self.stage = GameStage.HAND_COMPLETE
         hand_results["hand_number"] = self.hand_number
         hand_results["players"] = [p.to_dict() for p in players]
+        self.hand_result = hand_results
+        self._thinking_player_id = None
 
         await self.emit_event("hand_complete", hand_results)
 
@@ -520,4 +533,5 @@ class GameController:
             "is_running": self.is_running,
             "max_hands": self.max_hands,
             "thinking_player_id": self._thinking_player_id,
+            "hand_result": self.hand_result,
         }

@@ -7,3 +7,11 @@ __pycache__
 .vscode
 .idea
 *.md
+
+.env
+.env.*
+.venv
+venv
+data
+.deployment
+tests

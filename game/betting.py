@@ -139,7 +139,7 @@ class BettingRound:
         if len(active_players) == 1:
             # 只剩一个能行动的玩家
             p = active_players[0]
-            if p.has_acted or p.current_bet == self.current_bet:
+            if p.current_bet == self.current_bet:
                 return True
 
         # 所有能行动的玩家都已行动且下注一致
