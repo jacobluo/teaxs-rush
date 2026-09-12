@@ -194,3 +194,19 @@ class WebAppE2ETests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class AnalysisApiTests(unittest.TestCase):
+    def test_analysis_requires_login_and_a_matching_active_human_position(self):
+        from server.app import analysis_service
+        client = TestClient(app)
+        self.assertEqual(client.get('/api/game/analysis').status_code, 401)
+        self.assertEqual(client.post('/api/game/advice',json={'position_id':'x'}).status_code, 401)
+        token = client.post('/api/auth/login',json={'password':'texas2024'}).json()['token']
+        with patch.object(analysis_service,'statistics',new=AsyncMock(return_value={'position_id':'position','equity':.5})):
+            response = client.get('/api/game/analysis',headers=auth_header(token))
+            self.assertEqual(response.status_code,200)
+            self.assertEqual(response.json()['equity'],.5)
+        with patch.object(analysis_service,'advice',new=AsyncMock(return_value={'position_id':'position','action':'check'})) as advice:
+            response=client.post('/api/game/advice',json={'position_id':'position'},headers=auth_header(token))
+            self.assertEqual(response.status_code,200)
+            advice.assert_awaited_once_with('position')

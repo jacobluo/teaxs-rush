@@ -6,7 +6,7 @@
     <title>Texas Rush · 德州大乱斗</title>
     <meta name="theme-color" content="#102621">
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260912-status-font">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260912-directional-drawers2">
 </head>
 <body>
     <!-- ===== Navbar ===== -->
@@ -26,6 +26,8 @@
                 <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnReset" onclick="sendControl('reset')">重置</button>
             </div>
 
+            <button class="pixel-btn pixel-btn-small" onclick="openTablePanel('log')">牌局记录</button>
+            <button class="pixel-btn pixel-btn-small admin-only-inline" onclick="openTablePanel('players')">设置</button>
             <!-- 登录/登出按钮 -->
             <button class="pixel-btn pixel-btn-small" id="btnLogin" onclick="showLoginModal()">房间登录</button>
             <button class="pixel-btn pixel-btn-small admin-only-inline" id="btnAdminLabel" style="cursor:default;display:none;">管理员</button>
@@ -33,20 +35,24 @@
         </div>
     </nav>
 
+    <aside id="analysisDrawer" aria-label="AI 分析抽屉">
+<section class="analysis-details" id="analysisDetails" aria-label="详细牌局分析" hidden>
+                    <div class="analysis-heading"><strong>牌局分析</strong><button class="pixel-btn pixel-btn-small" onclick="PokerAdvisor.toggle()" aria-label="收起详细分析">收起</button></div>
+                    <div class="analysis-numbers" id="analysisNumbers"></div>
+                    <p class="analysis-threats" id="analysisThreats"></p>
+                    <div class="analysis-coach">
+                        <button class="pixel-btn pixel-btn-small" id="analysisAsk" onclick="PokerAdvisor.requestAdvice()">获取本轮 AI 建议</button>
+                        <p id="analysisAdvice" role="status" aria-live="polite"></p>
+                    </div>
+                    <p class="analysis-assumptions" id="analysisAssumptions"></p>
+                </section>
+    </aside>
+
     <!-- ===== Main Content ===== -->
     <div class="main-container">
         <!-- Left: Canvas Table -->
         <div class="table-area">
             <div class="table-notice" id="tableNotice" role="status"></div>
-            <div class="poker-table" id="pokerTable" aria-label="德州扑克牌桌"></div>
-            <div class="human-action-panel" id="humanActionPanel" role="region" aria-label="你的操作">
-                <div class="action-summary"><div class="human-action-info">
-                    <span id="humanActionTitle">等待你的操作</span>
-                    <span id="humanActionHint"></span><span id="actionCountdown"></span>
-                </div>
-                <div class="action-hand" id="humanActionHand" aria-label="你的底牌"></div></div>
-                <div class="human-action-controls" id="humanActionControls"></div>
-            </div>
             <div class="status-bar">
                 <span class="status-item" id="statusHand">第 0 手</span>
                 <div class="stage-indicator">
@@ -58,11 +64,30 @@
                 <span class="status-item gold" id="statusBlinds">小/大盲: $50/$100</span>
                 <span class="status-item" id="statusAlive">存活: 0/0</span>
             </div>
+            <div class="poker-table" id="pokerTable" aria-label="德州扑克牌桌"></div>
+            <div class="human-action-dock">
+            <div class="human-action-panel" id="humanActionPanel" role="region" aria-label="你的操作">
+                <div class="action-topline"><span id="humanActionTitle">等待你的操作</span>
+                    <section class="poker-advisor" id="pokerAdvisor" aria-label="牌局分析助手" hidden>                <div class="analysis-summary">
+                    <div id="analysisMetrics"></div>
+                    <button class="pixel-btn pixel-btn-small" id="analysisToggle" aria-expanded="false" aria-controls="analysisDetails" onclick="PokerAdvisor.toggle()">AI 分析</button>
+                    <button class="pixel-btn pixel-btn-small" id="analysisRetry" onclick="PokerAdvisor.retryStats()" hidden>重新计算</button>
+                </div>
+</section>
+                </div>
+                <div class="action-summary"><div class="human-action-info">
+                    <span id="humanActionHint"></span><span id="actionCountdown"></span>
+                </div>
+                <div class="action-hand" id="humanActionHand" aria-label="你的底牌"></div></div>
+                <div class="human-action-controls" id="humanActionControls"></div>
+            </div>
+            </div>
+
         </div>
 
         <!-- Right: Side Panel -->
-        <aside class="side-panel">
-            <div class="side-heading"><span>牌桌面板</span><small>LIVE TABLE</small></div>
+        <aside class="side-panel" id="tableSidePanel" data-open="false" data-mode="records" aria-label="牌桌工具">
+            <div class="side-heading"><span id="tablePanelTitle">牌局记录</span><button class="pixel-btn pixel-btn-small" onclick="closeTablePanel()" aria-label="关闭牌桌面板">关闭 ×</button></div>
             <div class="tab-bar">
                 <button class="tab-btn admin-tab" data-tab="models" onclick="switchTab('models')">模型管理</button>
                 <button class="tab-btn admin-tab" data-tab="players" onclick="switchTab('players')">牌桌设置</button>
@@ -148,12 +173,13 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/auth.js?v=20260912-street-actions"></script>
+    <script src="/static/js/auth.js?v=20260912-directional-drawers2"></script>
     <script src="/static/js/avatar_renderer.js?v=20260912-street-actions"></script>
-    <script src="/static/js/table_view.js?v=20260912-street-actions"></script>
+    <script src="/static/js/table_view.js?v=20260912-directional-drawers2"></script>
     <script src="/static/js/logger.js?v=20260912-street-actions"></script>
     <script src="/static/js/model_panel.js?v=20260912-deepseek"></script>
     <script src="/static/js/config_panel.js?v=20260912-street-actions"></script>
-    <script src="/static/js/app.js?v=20260912-street-actions"></script>
+    <script src="/static/js/advisor.js?v=20260912-directional-drawers2"></script>
+    <script src="/static/js/app.js?v=20260912-directional-drawers2"></script>
 </body>
 </html>

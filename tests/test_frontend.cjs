@@ -11,6 +11,7 @@ function setup() {
   const ctx = vm.createContext({document:{getElementById:el, querySelectorAll:()=>[], addEventListener(){}},
     isAdmin:()=>true, getToken:()=> 'test', WebSocket:{OPEN:1}, setInterval:()=>0, clearInterval(){},
     setTimeout:()=>0, clearTimeout(){}, Date, console, GameLogger:{addLog(){},addSystem(){}},
+    PokerAdvisor:{update(){},invalidate(){},setConnected(){}},
     PokerTable:{state:null, updateState(s){this.state=s},clearReasoningBubbles(){}}});
   vm.runInContext(fs.readFileSync('static/js/app.js','utf8'),ctx);
   return {ctx,el,run:code=>vm.runInContext(code,ctx)};
@@ -146,4 +147,51 @@ test('new model form defaults to DeepSeek while edits preserve the saved provide
   assert.equal(run('ModelPanel.form.api_key'),'');
   run("ModelPanel.models=[{id:'existing',base_url:'https://example.invalid/v1',model_name:'custom'}]; ModelPanel.showEditForm('existing')");
   assert.equal(run('ModelPanel.form.model_name'),'custom');
+});
+
+test('status notices expire so they do not cover the analysis panel',()=>{
+  const {run,el,ctx}=setup();
+  const timers=[];
+  ctx.setTimeout=fn=>{timers.push(fn);return timers.length};
+  run("showNotice('已入座')");
+  assert.equal(timers.length,1);
+  timers[0]();
+  assert.equal(el('tableNotice').textContent,'');
+});
+
+test('bilingual seat positions and first/current actors are explicit',()=>{
+  const html=tableView({stage:'preflop',first_actor_id:'me',thinking_player_id:'sb',
+    seat_positions:{me:'BTN/SB',sb:'BB',co:'CO'},players:[
+      {id:'me',name:'我',player_type:'human',hand:[]},
+      {id:'sb',name:'小狐狸',hand:[]},{id:'co',name:'老陈',hand:[]}]});
+  for(const label of ['BTN 庄家','SB 小盲','BB 大盲','CO 截止位','本轮先行动','现在行动']) assert.ok(html.includes(label),label);
+  assert.doesNotMatch(html,/action-order|aria-label="行动顺序"/);
+  const finished=tableView({stage:'hand_complete',first_actor_id:'me',players:[{id:'me',name:'我',hand:[]}]});
+  assert.doesNotMatch(finished,/本轮先行动/);
+});
+
+test('table drawer opens on demand and closes without submitting a game action',()=>{
+ const {run,el}=setup();
+ run('PokerAdvisor.open=true; PokerAdvisor._paint=()=>{}; openTablePanel("log")');
+ assert.equal(el('tableSidePanel').dataset.open,'true');
+ assert.equal(run('PokerAdvisor.open'),false);
+ run('closeTablePanel()');
+ assert.equal(el('tableSidePanel').dataset.open,'false');
+});
+
+test('records and settings have distinct drawer titles and navigation modes',()=>{
+ const {run,el}=setup();
+ run('PokerAdvisor._paint=()=>{}; ModelPanel={loadModels:()=>Promise.resolve()}; ConfigPanel={render(){}}; openTablePanel("players")');
+ assert.equal(el('tableSidePanel').dataset.mode,'settings');
+ assert.equal(el('tablePanelTitle').textContent,'设置');
+ run('openTablePanel("log")');
+ assert.equal(el('tableSidePanel').dataset.mode,'records');
+ assert.equal(el('tablePanelTitle').textContent,'牌局记录');
+});
+
+test('drawer starts below the navigation so its entry buttons remain clickable',()=>{
+ const {run,el}=setup();
+ el('tableSidePanel').style={setProperty(key,value){this[key]=value}};
+ run('document.querySelector=()=>({getBoundingClientRect:()=>({bottom:164})}); PokerAdvisor._paint=()=>{}; openTablePanel("log")');
+ assert.equal(el('tableSidePanel').style['--drawer-top'],'164px');
 });

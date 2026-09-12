@@ -76,6 +76,7 @@ function logout() {
 
 function updateUIForRole() {
     const admin = isAdmin();
+    PokerAdvisor.update(PokerTable.state);
     if (!admin) hideHumanActionPanel();
     else if (pendingHumanAction) renderHumanActionPanel(pendingHumanAction);
 

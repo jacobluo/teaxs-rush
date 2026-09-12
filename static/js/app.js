@@ -10,9 +10,42 @@ let renderedRequestId = null;
 let submittedRequestId = null;
 let practiceAfterLogin = false;
 let stateFetchCounter = 0;
+let noticeTimer = null;
 
 // ========== Tab 切换 ==========
+function updateDrawerPosition() {
+    const bottom = document.querySelector?.('.navbar')?.getBoundingClientRect().bottom || 0;
+    for (const id of ['tableSidePanel','analysisDrawer']) {
+        document.getElementById(id)?.style?.setProperty('--drawer-top', `${Math.max(0,bottom)}px`);
+    }
+    const actionHeight = document.getElementById('humanActionPanel')?.getBoundingClientRect?.().height || 0;
+    document.getElementById('analysisDrawer')?.style?.setProperty('--drawer-bottom', `${actionHeight}px`);
+}
+
+document.defaultView?.addEventListener('resize', updateDrawerPosition);
+
+function openTablePanel(tabName) {
+    updateDrawerPosition();
+    PokerAdvisor.open = false;
+    PokerAdvisor._paint();
+    document.getElementById('tableSidePanel').dataset.open = 'true';
+    switchTab(tabName);
+}
+
+function closeTablePanel() {
+    document.getElementById('tableSidePanel').dataset.open = 'false';
+    PokerAdvisor.open = false;
+    PokerAdvisor._paint();
+}
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeTablePanel();
+});
+
 function switchTab(tabName) {
+    const records = tabName === 'log';
+    document.getElementById('tableSidePanel').dataset.mode = records ? 'records' : 'settings';
+    document.getElementById('tablePanelTitle').textContent = records ? '牌局记录' : '设置';
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
@@ -71,6 +104,7 @@ function scheduleReconnect() {
 }
 
 function updateConnectionStatus(connected) {
+    PokerAdvisor.setConnected(connected);
     const el = document.getElementById('connectionStatus');
     if (connected) {
         el.textContent = '● 在线';
@@ -86,6 +120,7 @@ function updateConnectionStatus(connected) {
 function handleGameEvent(message) {
     const { type, data } = message;
     stateFetchCounter++;
+    if (['player_action','community_cards','hand_start','hand_complete','human_action_clear','game_reset','game_over','game_configured'].includes(type)) PokerAdvisor.invalidate();
 
     // 更新日志
     GameLogger.addLog(message);
@@ -161,6 +196,7 @@ function handleGameEvent(message) {
 
         case 'betting_round_start':
             updateStage(data.stage);
+            fetchAndUpdateState();
             break;
 
         case 'hand_complete':
@@ -261,6 +297,7 @@ function updateStatusFromState(state) {
         hideHumanActionPanel();
     }
     updateTableControls(state);
+    PokerAdvisor.update(state);
 }
 
 // ========== 游戏控制 ==========
@@ -369,6 +406,7 @@ function sendHumanAction(action) {
     }
 
     submittedRequestId = pendingHumanAction.request_id;
+    PokerAdvisor.invalidate();
     updateActionAvailability();
     ws.send(JSON.stringify({
         type: 'human_action',
@@ -383,6 +421,7 @@ function sendHumanAction(action) {
 document.addEventListener('DOMContentLoaded', async () => {
     // 初始化模块
     GameLogger.init();
+    PokerAdvisor.init();
     PokerTable.init(document.getElementById('pokerTable'));
     ConfigPanel.init();
 
@@ -437,7 +476,11 @@ function updateTableControls(state) {
 }
 
 function showNotice(message) {
+    clearTimeout(noticeTimer);
     document.getElementById('tableNotice').textContent = message;
+    noticeTimer = setTimeout(() => {
+        document.getElementById('tableNotice').textContent = '';
+    }, 5000);
 }
 
 async function joinPractice() {

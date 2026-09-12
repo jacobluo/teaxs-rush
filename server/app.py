@@ -5,20 +5,24 @@ import logging
 from typing import List
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi.responses import JSONResponse
 
 from server.auth import verify_password, create_token, verify_token, get_current_admin, TOKEN_EXPIRE_HOURS
 from server.schemas import (
     LoginRequest, TokenResponse,
     ModelCreate, ModelConfig, ModelConfigPublic,
     GameConfig,
+    AdviceRequest,
 )
 from server.model_store import model_store
 from server.config_store import config_store
 from server.game_manager import game_manager
+from server.analysis_service import AnalysisService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+analysis_service = AnalysisService(game_manager, model_store)
 
 
 # ========== 认证 API ==========
@@ -121,6 +125,16 @@ async def start_practice(admin: str = Depends(get_current_admin)):
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
     return {"status": "ok"}
+
+
+@router.get("/api/game/analysis")
+async def analyze_game(admin: str = Depends(get_current_admin)):
+    return JSONResponse(await analysis_service.statistics(), headers={"Cache-Control":"private, no-store"})
+
+
+@router.post("/api/game/advice")
+async def advise_game(request: AdviceRequest, admin: str = Depends(get_current_admin)):
+    return JSONResponse(await analysis_service.advice(request.position_id), headers={"Cache-Control":"private, no-store"})
 
 
 # ========== WebSocket ==========

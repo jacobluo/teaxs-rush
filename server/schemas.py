@@ -1,12 +1,16 @@
 """Pydantic 数据模型定义"""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
 from datetime import datetime
 
 
 class LoginRequest(BaseModel):
     password: str
+
+
+class AdviceRequest(BaseModel):
+    position_id: str = Field(min_length=1, max_length=128)
 
 
 class TokenResponse(BaseModel):

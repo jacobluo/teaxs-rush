@@ -57,6 +57,9 @@ class GameController:
         # 盲注位置
         self._sb_index: int = 0
         self._bb_index: int = 0
+        self._seat_positions = {}
+        self._first_actor_id = None
+        self._betting_stage = None
 
         # 控制状态
         self._thinking_player_id: Optional[str] = None
@@ -145,6 +148,8 @@ class GameController:
         self.hand_number += 1
         self.hand_result = None
         self.stage = GameStage.PREFLOP
+        self._first_actor_id = None
+        self._betting_stage = None
         active = self.get_active_players()
 
         # 重置状态
@@ -167,6 +172,8 @@ class GameController:
         # 同步到实例属性，供 get_state() 使用
         self._sb_index = sb_index
         self._bb_index = bb_index
+        self._seat_positions = {p.id: self._get_position_name(i, self.dealer_index, n)
+                                for i, p in enumerate(active)}
 
         await self.emit_event("hand_start", {
             "hand_number": self.hand_number,
@@ -270,6 +277,9 @@ class GameController:
         if is_preflop:
             betting.current_bet = self.big_blind
         self.current_betting = betting
+        first = betting.get_current_player()
+        self._first_actor_id = first.id if first else None
+        self._betting_stage = self.stage
 
         await self.emit_event("betting_round_start", {
             "stage": self.stage.value,
@@ -489,7 +499,11 @@ class GameController:
             return position_names[offset]
         if offset == total - 1:
             return "CO"
-        return f"MP{offset - 2}" if offset > 2 else f"UTG+{offset - 3}"
+        if offset == 3:
+            return "UTG"
+        if offset == total - 2:
+            return "HJ"
+        return f"MP{offset - 3}"
 
     def _first_active_after(self, players: List[Player], start: int) -> int:
         n = len(players)
@@ -529,6 +543,8 @@ class GameController:
             "dealer_index": self.dealer_index,
             "sb_index": self._sb_index,
             "bb_index": self._bb_index,
+            "seat_positions": dict(self._seat_positions),
+            "first_actor_id": self._first_actor_id if self._betting_stage == self.stage else None,
             "is_paused": self.is_paused,
             "is_running": self.is_running,
             "max_hands": self.max_hands,

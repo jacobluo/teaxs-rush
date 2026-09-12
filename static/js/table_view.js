@@ -81,23 +81,20 @@ const PokerTable = {
     _seat(player, index, count) {
         const own = player.player_type === 'human';
         const thinking = player.id === this.state.thinking_player_id;
-        const active = (this.state.players || []).filter(p => !p.is_eliminated);
-        const activeIndex = active.findIndex(p => p.id === player.id);
-        const tags = [];
-        if (activeIndex >= 0) {
-            if (activeIndex === this.state.dealer_index) tags.push('D 庄家');
-            if (activeIndex === this.state.sb_index) tags.push('SB');
-            if (activeIndex === this.state.bb_index) tags.push('BB');
-        }
+        const positions = {BTN:'BTN 庄家',SB:'SB 小盲',BB:'BB 大盲',UTG:'UTG 枪口位',HJ:'HJ 劫位',CO:'CO 截止位'};
+        const codes = (this.state.seat_positions?.[player.id] || '').split('/').filter(Boolean);
+        const tags = codes.map(code => `<span class="position-badge position-${this._escape(code.toLowerCase())}">${this._escape(positions[code] || `${code} 中位`)}</span>`);
+        const first = this._street(this.state.stage) && player.id === this.state.first_actor_id;
         const actions = {fold:'已弃牌',check:'过牌',call:'跟注',raise:'加注',all_in:'全押'};
-        const action = player.is_eliminated ? '已淘汰' : player.folded ? '已弃牌' : player.all_in ? '全押' : thinking ? (own ? '轮到你' : '思考中…') : (actions[String(player.last_action || '').toLowerCase()] || '等待行动');
+        const action = player.is_eliminated ? '已淘汰' : player.folded ? '已弃牌' : player.all_in ? '全押' : thinking ? (own ? '轮到你' : '正在行动…') : (actions[String(player.last_action || '').toLowerCase()] || '等待行动');
         const recent = this._recentActions.get(player.id);
         const winner = this.state.hand_result?.winners?.some(w => w.player?.id === player.id);
         const angle = 2 * Math.PI * index / count;
         const x = 50 - 38 * Math.sin(angle);
         const y = 50 + 36 * Math.cos(angle);
         return `<article class="seat ${own ? 'own-seat' : ''} ${thinking ? 'is-thinking' : ''} ${recent ? 'has-recent-action' : ''} ${winner ? 'is-winner' : ''} ${player.folded || player.is_eliminated ? 'is-folded' : ''}" style="--seat-x:${x}%;--seat-y:${y}%">
-            <div class="seat-top">${this._avatar(player.style)}<div class="seat-identity"><strong>${this._escape(player.name)}${own ? '<em>你</em>' : ''}</strong><span>${this._money(player.chips)} <small>筹码</small></span></div><span class="seat-position">${tags.join(' · ')}</span></div>
+            <div class="seat-top">${this._avatar(player.style)}<div class="seat-identity"><strong>${this._escape(player.name)}${own ? '<em>你</em>' : ''}</strong><span>${this._money(player.chips)} <small>筹码</small></span></div></div>
+            <div class="seat-position">${tags.join('')}${first ? '<span class="first-actor-badge">① 本轮先行动</span>' : ''}${thinking ? '<span class="current-actor-badge">▶ 现在行动</span>' : ''}</div>
             <div class="seat-bottom"><div class="hole-cards">${this._card(player.hand?.[0])}${this._card(player.hand?.[1])}</div><div class="seat-action">${own ? '<small>你的手牌</small>' : ''}<span>${action}</span>${player.current_bet > 0 ? `<small>已下注 ${this._money(player.current_bet)}</small>` : ''}</div></div>
             ${recent ? `<div class="action-flash action-${this._escape(recent.type)}"><small>刚刚行动</small> ${this._escape(recent.label)}</div>` : winner ? '<div class="winner-badge">★ 本手赢家</div>' : ''}
         </article>`;

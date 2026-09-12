@@ -22,7 +22,7 @@ docker-compose up -d
 ### Testing
 ```bash
 python3 -m unittest discover -s tests -v
-node --test tests/test_frontend.cjs
+node --test tests/*.cjs
 python3 -m compileall -q ai engine game server main.py tests
 git diff --check
 ```
@@ -117,4 +117,4 @@ Texas Rush is an AI Texas Hold'em poker platform where LLM-powered AI players au
 - `POST /api/game/practice` requires the existing admin login. It starts one human plus three built-in computer opponents without persisting or overwriting saved model/game settings.
 - Human games mask AI hole cards and live reasoning in both snapshots and events. AI-only spectator tables remain public. The human seat remains controlled by the room administrator.
 - Human requests include an expiry; pause retains the remaining time. Reconnecting clients receive the pending request in the state snapshot.
-- Frontend interaction regression tests use Node's built-in runner (`node --test tests/test_frontend.cjs`); no npm install is required.
+- Frontend interaction regression tests use Node's built-in runner (`node --test tests/*.cjs`); no npm install is required.
