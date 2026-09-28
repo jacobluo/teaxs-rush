@@ -1,0 +1,6 @@
+ARG RUNTIME_IMAGE=texas-rush:production
+FROM ${RUNTIME_IMAGE}
+
+COPY static/css/style.css /app/static/css/style.css
+COPY static/index.html /app/static/index.html
+COPY static/js/app.js /app/static/js/app.js

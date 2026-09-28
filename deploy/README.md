@@ -19,6 +19,16 @@ docker compose -f compose.production.yml up -d
 docker compose -f compose.production.yml ps
 ```
 
+仅更新配色或顶部导航时，可沿用线上镜像中的运行依赖。先将当前镜像保存为带日期的备份标签，再构建前端更新镜像：
+
+```sh
+docker image tag texas-rush:production texas-rush:before-ui-release
+docker build -f deploy/Dockerfile.ui --build-arg RUNTIME_IMAGE=texas-rush:before-ui-release -t texas-rush:production .
+docker compose -f compose.production.yml up -d
+```
+
+此方式只更新 `style.css`、`index.html` 和 `app.js`。其他应用代码的更新使用上面的完整构建流程。将配置、数据和旧版静态文件备份保存在 `/opt/texas-rush-backups/`，避免进入镜像构建目录。
+
 Nginx 配置位于 `/etc/nginx/conf.d/texas.conf`，对应本目录的 `nginx.conf`。修改后先运行 `nginx -t`，再运行 `systemctl reload nginx`。
 
 证书由已有的 `certbot-renew.timer` 自动续期；`renew-certificate.sh` 安装在 `/etc/letsencrypt/renewal-hooks/deploy/texas-nginx.sh`，续期后重载 Nginx。
