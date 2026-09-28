@@ -5,7 +5,7 @@ const vm = require('node:vm');
 function setup() {
   const elements = new Map();
   const el = id => {
-    if (!elements.has(id)) elements.set(id, {textContent:'', innerHTML:'', value:'', disabled:false, dataset:{}, classList:{add(){},remove(){},toggle(){}}});
+    if (!elements.has(id)) elements.set(id, {textContent:'', innerHTML:'', value:'', disabled:false, hidden:false, dataset:{}, attributes:{}, setAttribute(name,value){this.attributes[name]=value}, classList:{add(){},remove(){},toggle(){}}});
     return elements.get(id);
   };
   const ctx = vm.createContext({document:{getElementById:el, querySelectorAll:()=>[], addEventListener(){}},
@@ -33,6 +33,19 @@ test('pause control sends resume when table is paused',()=>{
   const {run}=setup();
   run('ws={readyState:1,send(data){this.sent=JSON.parse(data)}}; PokerTable.state={is_paused:true}; sendControl("pause")');
   assert.equal(run('ws.sent.type'),'resume');
+});
+test('top controls collapse and expand with an accessible toggle',()=>{
+  const html=fs.readFileSync('static/index.html','utf8');
+  assert.match(html,/id="navbarToggle"[^>]*aria-controls="navbarControls"[^>]*aria-expanded="true"/);
+  const {run,el}=setup();
+  run('toggleNavbarControls()');
+  assert.equal(el('navbarControls').hidden,true);
+  assert.equal(el('navbarToggle').attributes['aria-expanded'],'false');
+  assert.match(el('navbarToggle').textContent,/展开/);
+  run('toggleNavbarControls()');
+  assert.equal(el('navbarControls').hidden,false);
+  assert.equal(el('navbarToggle').attributes['aria-expanded'],'true');
+  assert.match(el('navbarToggle').textContent,/收起/);
 });
 test('duplicate clicks submit only one action per turn',()=>{
   const {run}=setup();

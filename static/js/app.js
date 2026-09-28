@@ -22,6 +22,17 @@ function updateDrawerPosition() {
     document.getElementById('analysisDrawer')?.style?.setProperty('--drawer-bottom', `${actionHeight}px`);
 }
 
+function toggleNavbarControls() {
+    const controls = document.getElementById('navbarControls');
+    const button = document.getElementById('navbarToggle');
+    const expanded = controls.hidden;
+    controls.hidden = !expanded;
+    button.setAttribute('aria-expanded', String(expanded));
+    button.setAttribute('aria-label', expanded ? '收起顶部控制栏' : '展开顶部控制栏');
+    button.textContent = expanded ? '收起 ↑' : '展开 ↓';
+    updateDrawerPosition();
+}
+
 document.defaultView?.addEventListener('resize', updateDrawerPosition);
 
 function openTablePanel(tabName) {

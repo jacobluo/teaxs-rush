@@ -1,7 +1,7 @@
 # 线上部署
 
 地址：https://texas.webuddy.cc
-服务器：`ssh foodyouknow`
+服务器：`ssh allinone`
 目录：`/opt/texas-rush`
 
 游戏通过 Docker Compose 运行，监听 `127.0.0.1:8084`，Nginx 提供 HTTPS 和 WebSocket 代理。单进程保存当前牌局，重启会结束进行中的牌局；模型与牌桌配置通过 `data/` 持久化。
