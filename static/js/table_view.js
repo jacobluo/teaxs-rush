@@ -93,7 +93,7 @@ const PokerTable = {
         const angle = 2 * Math.PI * index / count;
         const x = 50 - 38 * Math.sin(angle);
         const y = 50 + 36 * Math.cos(angle);
-        return `<article class="seat ${own ? 'own-seat' : ''} ${thinking ? 'is-thinking' : ''} ${recent ? 'has-recent-action' : ''} ${winner ? 'is-winner' : ''} ${player.folded || player.is_eliminated ? 'is-folded' : ''}" style="--seat-x:${x}%;--seat-y:${y}%">
+        return `<article class="seat ${own ? 'own-seat' : ''} ${thinking ? 'is-thinking' : ''} ${recent ? 'has-recent-action' : ''} ${winner ? 'is-winner' : ''} ${player.folded || player.is_eliminated ? 'is-folded' : ''}" data-player-id="${this._escape(player.id)}" style="--seat-x:${x}%;--seat-y:${y}%">
             <div class="seat-top">${this._avatar(own ? '均衡' : player.style)}<div class="seat-identity"><strong>${this._escape(player.name)}${own ? '<em>你</em>' : ''}</strong><span>${this._money(player.chips)} <small>筹码</small></span></div></div>
             <div class="seat-position">${tags.join('')}${first ? '<span class="first-actor-badge">① 本轮先行动</span>' : ''}${thinking ? '<span class="current-actor-badge">▶ 现在行动</span>' : ''}</div>
             <div class="seat-bottom"><div class="hole-cards">${this._card(player.hand?.[0])}${this._card(player.hand?.[1])}</div><div class="seat-action">${own ? '<small>你的手牌</small>' : ''}<span>${action}</span>${player.current_bet > 0 ? `<small>已下注 ${this._money(player.current_bet)}</small>` : ''}</div></div>
@@ -103,6 +103,9 @@ const PokerTable = {
     _render() {
         if (!this.root) return;
         const state = this.state || {};
+        const previousScroll = this.root.querySelector?.('.seats')?.scrollLeft || 0;
+        const previousActor = this._lastRenderedActor;
+        this._lastRenderedActor = state.thinking_player_id;
         const players = [...(state.players || [])];
         // Anchor the human seat at the bottom, independently of dealer rotation.
         const humanIndex = players.findIndex(p => p.player_type === 'human');
@@ -115,8 +118,20 @@ const PokerTable = {
         const result = this._result();
         const board = `<section class="community-board" aria-label="公共牌与底池">${result || `<span class="eyebrow">${stages[state.stage] || '牌桌'}</span><div class="pot-label">底池 <strong>${this._money(state.pot)}</strong><small>筹码</small></div>`}<div class="community-cards">${Array.from({length:5}, (_, i) => this._card(state.community_cards?.[i], true)).join('')}</div><span class="board-caption">TEXAS RUSH · NO LIMIT HOLD’EM</span></section>`;
         const recent = this._latestAction;
-        const ticker = `<div class="action-ticker ${recent ? 'active' : ''}" role="status" aria-live="polite">${recent ? `<span>刚刚行动</span><strong>${this._escape(recent.name)}</strong><b>${this._escape(recent.label)}</b>` : `<span>牌桌动态</span> ${this._street(state.stage) ? `${this._street(state.stage)} · 等待玩家行动` : '玩家出手后，这里会显示动作提醒'}`}</div>`;
+        const activity = recent ? `<span>刚刚行动</span><strong>${this._escape(recent.name)}</strong><b>${this._escape(recent.label)}</b>` : `<span>牌桌动态</span> ${this._street(state.stage) ? `${this._street(state.stage)} · 等待玩家行动` : '玩家出手后，这里会显示动作提醒'}`;
+        const scrollHint = players.length > 4 ? `<span class="seat-scroll-hint">${players.length} 人 · 滑动查看</span>` : '';
+        const ticker = `<div class="action-ticker ${recent ? 'active' : ''}" role="status" aria-live="polite">${activity}${scrollHint}</div>`;
         const own = players.find(p => p.player_type === 'human');
         this.root.innerHTML = `${ticker}<div class="table-arena ${players.length > 6 ? 'many-seats' : ''}"><div class="table-felt" aria-hidden="true"></div><div class="seats">${players.map((p,i) => p === own ? '' : this._seat(p,i,players.length)).join('')}</div>${board}${own ? `<div class="hero-seat-slot">${this._seat(own,0,players.length)}</div>` : ''}</div>`;
+        const strip = this.root.querySelector?.('.seats');
+        if (!strip) return;
+        strip.scrollLeft = previousScroll;
+        if (strip.scrollWidth <= strip.clientWidth || previousActor === state.thinking_player_id) return;
+        const actor = [...strip.children].find(seat => seat.dataset.playerId === state.thinking_player_id);
+        if (!actor) return;
+        const viewport = strip.getBoundingClientRect();
+        const seat = actor.getBoundingClientRect();
+        if (seat.left < viewport.left) strip.scrollLeft -= viewport.left - seat.left;
+        else if (seat.right > viewport.right) strip.scrollLeft += seat.right - viewport.right;
     },
 };

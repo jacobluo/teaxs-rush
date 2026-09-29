@@ -122,6 +122,33 @@ function tableView(state) {
   vm.runInContext('PokerTable.init(root); PokerTable.updateState(state)',ctx);
   return root.innerHTML;
 }
+function tableWithScrollableSeats() {
+  const strip={scrollLeft:0,clientWidth:300,scrollWidth:900,getBoundingClientRect:()=>({left:0,right:300})};
+  strip.children=[{dataset:{playerId:'far'},getBoundingClientRect:()=>({left:600-strip.scrollLeft,right:700-strip.scrollLeft})}];
+  const root={_html:'',get innerHTML(){return this._html},set innerHTML(value){this._html=value;strip.scrollLeft=0},querySelector:()=>strip};
+  const ctx=vm.createContext({document:{createElement:()=>({getContext:()=>null})},AvatarRenderer:{drawAvatar(){}},root});
+  vm.runInContext(fs.readFileSync('static/js/table_view.js','utf8'),ctx);
+  const state={stage:'flop',hand_number:1,thinking_player_id:'near',players:[{id:'near',name:'近处',chips:1000},{id:'far',name:'远处',chips:1000}]};
+  ctx.state=state;
+  const run=code=>vm.runInContext(code,ctx);
+  run('PokerTable.init(root); PokerTable.updateState(state)');
+  return {strip,run};
+}
+test('a table refresh preserves the manually scrolled opponent strip',()=>{
+  const {strip,run}=tableWithScrollableSeats();
+  strip.scrollLeft=200;
+  run('PokerTable.updateState(state)');
+  assert.equal(strip.scrollLeft,200);
+});
+test('a newly acting opponent is revealed while later manual browsing is retained',()=>{
+  const {strip,run}=tableWithScrollableSeats();
+  strip.scrollLeft=200;
+  run('PokerTable.updateState({...state,thinking_player_id:"far"})');
+  assert.equal(strip.scrollLeft,400);
+  strip.scrollLeft=100;
+  run('PokerTable.updateState({...state,thinking_player_id:"far"})');
+  assert.equal(strip.scrollLeft,100);
+});
 test('responsive table identifies own cards, turn and escaped player names',()=>{
   const html=tableView({stage:'preflop',pot:150,thinking_player_id:'me',players:[
     {id:'me',name:'<我>',player_type:'human',chips:950,hand:[{rank:'A',suit:'♠'},{rank:'K',suit:'♥'}]},
