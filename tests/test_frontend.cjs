@@ -17,6 +17,17 @@ function setup() {
   return {ctx,el,run:code=>vm.runInContext(code,ctx)};
 }
 const turn = {request_id:'one',player_name:'我',available_actions:{can_raise:true,can_call:true,to_call:50,min_raise_to:200,max_raise_to:1000}};
+test('call or check is the single primary action while aggressive actions stay secondary',()=>{
+  for (const action of ['call','check']) {
+    const {run,el}=setup();
+    const request={...turn,available_actions:{...turn.available_actions,can_fold:true,can_all_in:true,can_call:action==='call',can_check:action==='check'}};
+    run(`renderHumanActionPanel(${JSON.stringify(request)})`);
+    const buttons=el('humanActionControls').innerHTML.match(/<button[^>]*>/g);
+    const primary=buttons.filter(button=>button.includes('pixel-btn-primary'));
+    assert.equal(primary.length,1);
+    assert.ok(primary[0].includes(`sendHumanAction('${action}')`));
+  }
+});
 test('authoritative reconnect clears an expired human request',()=>{
   const {run}=setup();
   run(`pendingHumanAction=${JSON.stringify(turn)}; updateStatusFromState({stage:'flop',pending_human_action:null});`);
@@ -70,6 +81,30 @@ test('responsive table identifies own cards, turn and escaped player names',()=>
   assert.match(html,/轮到你/);
   assert.match(html,/底牌未公开/);
   assert.match(html,/150/);
+});
+test('seats retain character portraits for AI styles and the human player',()=>{
+  const root={innerHTML:''};
+  const styles=[];
+  const ctx=vm.createContext({
+    document:{createElement:()=>({getContext:()=>({}),toDataURL:()=>`data:image/png;base64,portrait${styles.length}`})},
+    AvatarRenderer:{drawAvatar(_ctx,style){styles.push(style)}}
+  });
+  vm.runInContext(fs.readFileSync('static/js/table_view.js','utf8'),ctx);
+  ctx.root=root;
+  ctx.state={players:[
+    {id:'a',name:'阿岚',style:'激进',hand:[]},
+    {id:'b',name:'<名字>',style:'诈唬',hand:[]},
+    {id:'c',name:'我',player_type:'human',style:'激进',hand:[]},
+    {id:'d',name:'新玩家',style:'" onmouseover="bad()',hand:[]}
+  ]};
+  vm.runInContext('PokerTable.init(root); PokerTable.updateState(state)',ctx);
+  assert.deepEqual(styles,['激进','诈唬','均衡']);
+  assert.equal((root.innerHTML.match(/<img class="seat-avatar"/g)||[]).length,4);
+  assert.match(root.innerHTML,/data:image\/png;base64,portrait/);
+  assert.match(root.innerHTML,/&lt;名字&gt;/);
+  assert.doesNotMatch(root.innerHTML,/onmouseover/);
+  vm.runInContext('PokerTable.updateState(state)',ctx);
+  assert.equal(styles.length,3);
 });
 test('reset view removes all previous seats and shows an entry hint',()=>{
   const html=tableView({stage:'waiting'});

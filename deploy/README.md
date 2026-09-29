@@ -27,7 +27,7 @@ docker build -f deploy/Dockerfile.ui --build-arg RUNTIME_IMAGE=texas-rush:before
 docker compose -f compose.production.yml up -d
 ```
 
-此方式只更新 `style.css`、`index.html` 和 `app.js`。其他应用代码的更新使用上面的完整构建流程。将配置、数据和旧版静态文件备份保存在 `/opt/texas-rush-backups/`，避免进入镜像构建目录。
+此方式只更新 `style.css`、`index.html`、`app.js`、`table_view.js` 和牌桌纹理素材。其他应用代码的更新使用上面的完整构建流程。将配置、数据和旧版静态文件备份保存在 `/opt/texas-rush-backups/`，避免进入镜像构建目录。
 
 Nginx 配置位于 `/etc/nginx/conf.d/texas.conf`，对应本目录的 `nginx.conf`。修改后先运行 `nginx -t`，再运行 `systemctl reload nginx`。
 

@@ -2,8 +2,8 @@
 const PokerTable = {
     root: null,
     state: null,
-    _reasoningBubbles: {},
     _avatars: new Map(),
+    _reasoningBubbles: {},
     _recentActions: new Map(),
     _latestAction: null,
     init(root) { this.root = root; this._render(); },
@@ -68,15 +68,16 @@ const PokerTable = {
         return `<span class="playing-card ${red ? 'red' : ''}" aria-label="${this._escape(card.rank + card.suit)}"><b>${this._escape(card.rank)}</b><span>${this._escape(card.suit)}</span></span>`;
     },
     _avatar(style) {
-        if (!this._avatars.has(style)) {
+        const avatarStyle = ['激进','保守','均衡','诈唬','诡计'].includes(style) ? style : '均衡';
+        if (!this._avatars.has(avatarStyle)) {
             const canvas = document.createElement('canvas');
             canvas.width = canvas.height = 64;
             const ctx = canvas.getContext('2d');
             if (!ctx) return '';
-            AvatarRenderer.drawAvatar(ctx, style || '均衡', 0, 0, 64);
-            this._avatars.set(style, canvas.toDataURL());
+            AvatarRenderer.drawAvatar(ctx, avatarStyle, 0, 0, 64);
+            this._avatars.set(avatarStyle, canvas.toDataURL());
         }
-        return `<img class="seat-avatar" src="${this._avatars.get(style)}" alt="">`;
+        return `<img class="seat-avatar" src="${this._avatars.get(avatarStyle)}" alt="">`;
     },
     _seat(player, index, count) {
         const own = player.player_type === 'human';
@@ -93,7 +94,7 @@ const PokerTable = {
         const x = 50 - 38 * Math.sin(angle);
         const y = 50 + 36 * Math.cos(angle);
         return `<article class="seat ${own ? 'own-seat' : ''} ${thinking ? 'is-thinking' : ''} ${recent ? 'has-recent-action' : ''} ${winner ? 'is-winner' : ''} ${player.folded || player.is_eliminated ? 'is-folded' : ''}" style="--seat-x:${x}%;--seat-y:${y}%">
-            <div class="seat-top">${this._avatar(player.style)}<div class="seat-identity"><strong>${this._escape(player.name)}${own ? '<em>你</em>' : ''}</strong><span>${this._money(player.chips)} <small>筹码</small></span></div></div>
+            <div class="seat-top">${this._avatar(own ? '均衡' : player.style)}<div class="seat-identity"><strong>${this._escape(player.name)}${own ? '<em>你</em>' : ''}</strong><span>${this._money(player.chips)} <small>筹码</small></span></div></div>
             <div class="seat-position">${tags.join('')}${first ? '<span class="first-actor-badge">① 本轮先行动</span>' : ''}${thinking ? '<span class="current-actor-badge">▶ 现在行动</span>' : ''}</div>
             <div class="seat-bottom"><div class="hole-cards">${this._card(player.hand?.[0])}${this._card(player.hand?.[1])}</div><div class="seat-action">${own ? '<small>你的手牌</small>' : ''}<span>${action}</span>${player.current_bet > 0 ? `<small>已下注 ${this._money(player.current_bet)}</small>` : ''}</div></div>
             ${recent ? `<div class="action-flash action-${this._escape(recent.type)}"><small>刚刚行动</small> ${this._escape(recent.label)}</div>` : winner ? '<div class="winner-badge">★ 本手赢家</div>' : ''}

@@ -356,13 +356,13 @@ function renderHumanActionPanel(request) {
 
     const buttons = [];
     if (available.can_fold) {
-        buttons.push(`<button class="pixel-btn pixel-btn-small pixel-btn-danger" onclick="sendHumanAction('fold')">弃牌</button>`);
+        buttons.push(`<button class="pixel-btn pixel-btn-small" onclick="sendHumanAction('fold')">弃牌</button>`);
     }
     if (available.can_check) {
-        buttons.push(`<button class="pixel-btn pixel-btn-small" onclick="sendHumanAction('check')">过牌</button>`);
+        buttons.push(`<button class="pixel-btn pixel-btn-small pixel-btn-primary" onclick="sendHumanAction('check')">过牌</button>`);
     }
     if (available.can_call) {
-        buttons.push(`<button class="pixel-btn pixel-btn-small" onclick="sendHumanAction('call')">跟注 $${toCall}</button>`);
+        buttons.push(`<button class="pixel-btn pixel-btn-small pixel-btn-primary" onclick="sendHumanAction('call')">跟注 ${toCall.toLocaleString()}</button>`);
     }
     if (available.can_raise) {
         buttons.push(`
@@ -370,12 +370,12 @@ function renderHumanActionPanel(request) {
                 <input class="pixel-input raise-input" id="humanRaiseAmount"
                        aria-label="加注至" type="number" inputmode="numeric" min="${minRaiseTo}" max="${maxRaiseTo}" step="1"
                        value="${minRaiseTo}">
-                <button class="pixel-btn pixel-btn-small pixel-btn-primary" onclick="sendHumanAction('raise')">加注至</button>
+                <button class="pixel-btn pixel-btn-small" onclick="sendHumanAction('raise')">加注至</button>
             </div>
         `);
     }
     if (available.can_all_in) {
-        buttons.push(`<button class="pixel-btn pixel-btn-small pixel-btn-primary" onclick="sendHumanAction('all_in')">全押</button>`);
+        buttons.push(`<button class="pixel-btn pixel-btn-small" onclick="sendHumanAction('all_in')">全押</button>`);
     }
 
     controls.innerHTML = buttons.join('');

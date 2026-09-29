@@ -4,3 +4,5 @@ FROM ${RUNTIME_IMAGE}
 COPY static/css/style.css /app/static/css/style.css
 COPY static/index.html /app/static/index.html
 COPY static/js/app.js /app/static/js/app.js
+COPY static/js/table_view.js /app/static/js/table_view.js
+COPY static/assets/poker-felt-blue-v1.jpg /app/static/assets/poker-felt-blue-v1.jpg
