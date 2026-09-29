@@ -6,7 +6,7 @@
     <title>Texas Rush · 德州大乱斗</title>
     <meta name="theme-color" content="#f7fafd">
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260929-pale-blue-r8">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260929-mobile-focus-r4">
 </head>
 <body>
     <!-- ===== Navbar ===== -->
@@ -14,27 +14,30 @@
         <div class="navbar-title">
             <span class="brand-mark">♠</span><div><span class="pixel-title">Texas Rush</span><span class="brand-caption">德州大乱斗</span></div>
         </div>
-        <div class="navbar-controls" id="navbarControls">
+        <div class="navbar-primary" id="navbarPrimary" data-running="false">
             <button class="pixel-btn pixel-btn-small pixel-btn-primary" id="btnJoin" onclick="joinPractice()">入座练习</button>
             <span id="connectionStatus" class="connection-status disconnected">● 离线</span>
+            <button class="pixel-btn pixel-btn-small admin-only-inline" id="btnPause" onclick="sendControl('pause')">暂停</button>
+        </div>
+        <div class="navbar-controls" id="navbarControls">
 
             <!-- 游戏控制按钮（管理员专属） -->
             <div class="admin-only game-controls" style="gap: 6px;">
-                <button class="pixel-btn pixel-btn-small" id="btnStart" onclick="sendControl('start')">开始</button>
-                <button class="pixel-btn pixel-btn-small" id="btnPause" onclick="sendControl('pause')">暂停</button>
-                <button class="pixel-btn pixel-btn-small" id="btnStep" onclick="sendControl('step')">单步</button>
-                <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnReset" onclick="sendControl('reset')">重置</button>
+                <button class="pixel-btn pixel-btn-small" id="btnStart" onclick="runNavbarAction(() => sendControl('start'))">开始</button>
+                <button class="pixel-btn pixel-btn-small" id="btnStep" onclick="runNavbarAction(() => sendControl('step'))">单步</button>
+                <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnReset" onclick="runNavbarAction(() => sendControl('reset'))">重置</button>
             </div>
 
-            <button class="pixel-btn pixel-btn-small" onclick="openTablePanel('log')">牌局记录</button>
-            <button class="pixel-btn pixel-btn-small admin-only-inline" onclick="openTablePanel('players')">设置</button>
+            <button class="pixel-btn pixel-btn-small" onclick="runNavbarAction(() => openTablePanel('log'))">牌局记录</button>
+            <button class="pixel-btn pixel-btn-small admin-only-inline" onclick="runNavbarAction(() => openTablePanel('players'))">设置</button>
             <!-- 登录/登出按钮 -->
-            <button class="pixel-btn pixel-btn-small" id="btnLogin" onclick="showLoginModal()">房间登录</button>
+            <button class="pixel-btn pixel-btn-small" id="btnLogin" onclick="runNavbarAction(() => showLoginModal())">房间登录</button>
             <button class="pixel-btn pixel-btn-small admin-only-inline" id="btnAdminLabel" style="cursor:default;display:none;">管理员</button>
-            <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnLogout" style="display:none;" onclick="logout()">登出</button>
+            <button class="pixel-btn pixel-btn-small pixel-btn-danger" id="btnLogout" style="display:none;" onclick="runNavbarAction(() => logout())">登出</button>
         </div>
         <button class="pixel-btn pixel-btn-small navbar-toggle" id="navbarToggle" aria-controls="navbarControls" aria-expanded="true" aria-label="收起顶部控制栏" onclick="toggleNavbarControls()">收起 ↑</button>
     </nav>
+    <div class="navbar-backdrop" id="navbarBackdrop" hidden aria-hidden="true" onclick="closeNavbarControls()"></div>
 
     <aside id="analysisDrawer" aria-label="AI 分析抽屉">
 <section class="analysis-details" id="analysisDetails" aria-label="详细牌局分析" hidden>
@@ -181,6 +184,6 @@
     <script src="/static/js/model_panel.js?v=20260912-deepseek"></script>
     <script src="/static/js/config_panel.js?v=20260912-street-actions"></script>
     <script src="/static/js/advisor.js?v=20260912-directional-drawers2"></script>
-    <script src="/static/js/app.js?v=20260929-pale-blue-r2"></script>
+    <script src="/static/js/app.js?v=20260929-mobile-focus-r2"></script>
 </body>
 </html>

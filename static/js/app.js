@@ -11,6 +11,7 @@ let submittedRequestId = null;
 let practiceAfterLogin = false;
 let stateFetchCounter = 0;
 let noticeTimer = null;
+let navbarIsMobile = false;
 
 // ========== Tab 切换 ==========
 function updateDrawerPosition() {
@@ -22,15 +23,47 @@ function updateDrawerPosition() {
     document.getElementById('analysisDrawer')?.style?.setProperty('--drawer-bottom', `${actionHeight}px`);
 }
 
-function toggleNavbarControls() {
+function setNavbarExpanded(expanded) {
     const controls = document.getElementById('navbarControls');
     const button = document.getElementById('navbarToggle');
-    const expanded = controls.hidden;
     controls.hidden = !expanded;
+    controls.dataset.open = String(expanded);
     button.setAttribute('aria-expanded', String(expanded));
-    button.setAttribute('aria-label', expanded ? '收起顶部控制栏' : '展开顶部控制栏');
-    button.textContent = expanded ? '收起 ↑' : '展开 ↓';
+    button.setAttribute('aria-label', navbarIsMobile ? (expanded ? '关闭更多功能' : '打开更多功能') : (expanded ? '收起顶部控制栏' : '展开顶部控制栏'));
+    button.textContent = navbarIsMobile ? (expanded ? '关闭' : '更多') : (expanded ? '收起 ↑' : '展开 ↓');
+    document.getElementById('navbarBackdrop').hidden = !navbarIsMobile || !expanded;
     updateDrawerPosition();
+}
+
+function initNavbarControls() {
+    const media = document.defaultView?.matchMedia?.('(max-width: 600px)');
+    const applyMode = ({matches = false} = {}) => {
+        navbarIsMobile = matches;
+        setNavbarExpanded(!matches);
+    };
+    applyMode(media);
+    media?.addEventListener('change', applyMode);
+}
+
+function toggleNavbarControls() {
+    const expanded = document.getElementById('navbarControls').hidden;
+    if (navbarIsMobile && expanded) closeTablePanel();
+    setNavbarExpanded(expanded);
+    if (navbarIsMobile && expanded) {
+        const buttons = document.getElementById('navbarControls').querySelectorAll?.('button') || [];
+        [...buttons].find(button => !button.disabled && button.getClientRects().length)?.focus();
+    }
+}
+
+function closeNavbarControls() {
+    if (!navbarIsMobile || document.getElementById('navbarControls').hidden) return;
+    setNavbarExpanded(false);
+    document.getElementById('navbarToggle').focus?.();
+}
+
+function runNavbarAction(action) {
+    closeNavbarControls();
+    return action();
 }
 
 document.defaultView?.addEventListener('resize', updateDrawerPosition);
@@ -50,7 +83,10 @@ function closeTablePanel() {
 }
 
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeTablePanel();
+    if (event.key === 'Escape') {
+        closeNavbarControls();
+        closeTablePanel();
+    }
 });
 
 function switchTab(tabName) {
@@ -430,6 +466,7 @@ function sendHumanAction(action) {
 
 // ========== 初始化 ==========
 document.addEventListener('DOMContentLoaded', async () => {
+    initNavbarControls();
     // 初始化模块
     GameLogger.init();
     PokerAdvisor.init();
@@ -478,6 +515,7 @@ setInterval(updateActionAvailability, 1000);
 
 function updateTableControls(state) {
     const running = !!state.is_running;
+    document.getElementById('navbarPrimary').dataset.running = String(running);
     document.getElementById('btnPause').textContent = state.is_paused ? '继续' : '暂停';
     document.getElementById('btnPause').disabled = !running;
     document.getElementById('btnStart').disabled = running || !state.players?.length || state.stage === 'game_over';

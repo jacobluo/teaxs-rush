@@ -2,19 +2,21 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-function setup() {
+function setup({mobile=false}={}) {
   const elements = new Map();
+  const events=new Map();
+  const media={matches:mobile,addEventListener(_type,callback){this.change=callback}};
   const el = id => {
     if (!elements.has(id)) elements.set(id, {textContent:'', innerHTML:'', value:'', disabled:false, hidden:false, dataset:{}, attributes:{}, setAttribute(name,value){this.attributes[name]=value}, classList:{add(){},remove(){},toggle(){}}});
     return elements.get(id);
   };
-  const ctx = vm.createContext({document:{getElementById:el, querySelectorAll:()=>[], addEventListener(){}},
+  const ctx = vm.createContext({document:{getElementById:el, querySelectorAll:()=>[], addEventListener(type,callback){events.set(type,callback)},defaultView:{matchMedia:()=>media,addEventListener(){}}},
     isAdmin:()=>true, getToken:()=> 'test', WebSocket:{OPEN:1}, setInterval:()=>0, clearInterval(){},
     setTimeout:()=>0, clearTimeout(){}, Date, console, GameLogger:{addLog(){},addSystem(){}},
-    PokerAdvisor:{update(){},invalidate(){},setConnected(){}},
+    PokerAdvisor:{update(){},invalidate(){},setConnected(){},_paint(){}},
     PokerTable:{state:null, updateState(s){this.state=s},clearReasoningBubbles(){}}});
   vm.runInContext(fs.readFileSync('static/js/app.js','utf8'),ctx);
-  return {ctx,el,run:code=>vm.runInContext(code,ctx)};
+  return {ctx,el,media,events,run:code=>vm.runInContext(code,ctx)};
 }
 const turn = {request_id:'one',player_name:'我',available_actions:{can_raise:true,can_call:true,to_call:50,min_raise_to:200,max_raise_to:1000}};
 test('call or check is the single primary action while aggressive actions stay secondary',()=>{
@@ -57,6 +59,55 @@ test('top controls collapse and expand with an accessible toggle',()=>{
   assert.equal(el('navbarControls').hidden,false);
   assert.equal(el('navbarToggle').attributes['aria-expanded'],'true');
   assert.match(el('navbarToggle').textContent,/收起/);
+});
+test('mobile auxiliary controls start closed and dismiss before an action opens',()=>{
+  const {run,el}=setup({mobile:true});
+  run('initNavbarControls()');
+  assert.equal(el('navbarControls').hidden,true);
+  assert.equal(el('navbarBackdrop').hidden,true);
+  assert.equal(el('navbarToggle').attributes['aria-expanded'],'false');
+  assert.equal(el('navbarToggle').textContent,'更多');
+  run('toggleNavbarControls()');
+  assert.equal(el('navbarControls').hidden,false);
+  assert.equal(el('navbarBackdrop').hidden,false);
+  assert.equal(el('navbarToggle').attributes['aria-expanded'],'true');
+  run('runNavbarAction(() => { actionSawMenuClosed = document.getElementById("navbarControls").hidden; })');
+  assert.equal(run('actionSawMenuClosed'),true);
+  assert.equal(el('navbarBackdrop').hidden,true);
+});
+test('crossing the mobile breakpoint restores desktop controls and closes mobile controls',()=>{
+  const {run,el,media}=setup({mobile:true});
+  run('initNavbarControls()');
+  media.change({matches:false});
+  assert.equal(el('navbarControls').hidden,false);
+  assert.equal(el('navbarBackdrop').hidden,true);
+  assert.match(el('navbarToggle').textContent,/收起/);
+  media.change({matches:true});
+  assert.equal(el('navbarControls').hidden,true);
+  assert.equal(el('navbarToggle').textContent,'更多');
+});
+test('mobile menu focuses an available tool and returns focus when dismissed',()=>{
+  const {run,el}=setup({mobile:true});
+  let focused='';
+  el('navbarControls').querySelectorAll=()=>[
+    {disabled:false,getClientRects:()=>[],focus(){focused='hidden'}},
+    {disabled:true,getClientRects:()=>[{}],focus(){focused='disabled'}},
+    {disabled:false,getClientRects:()=>[{}],focus(){focused='tool'}}
+  ];
+  el('navbarToggle').focus=()=>{focused='toggle'};
+  run('initNavbarControls(); toggleNavbarControls()');
+  assert.equal(focused,'tool');
+  run('closeNavbarControls()');
+  assert.equal(focused,'toggle');
+});
+test('Escape dismisses mobile tools without sending a game command',()=>{
+  const {run,el,events}=setup({mobile:true});
+  run('initNavbarControls(); toggleNavbarControls(); ws={readyState:1,count:0,send(){this.count++}}');
+  events.get('keydown')({key:'Escape'});
+  assert.equal(el('navbarControls').hidden,true);
+  assert.equal(el('navbarBackdrop').hidden,true);
+  assert.equal(el('tableSidePanel').dataset.open,'false');
+  assert.equal(run('ws.count'),0);
 });
 test('duplicate clicks submit only one action per turn',()=>{
   const {run}=setup();
